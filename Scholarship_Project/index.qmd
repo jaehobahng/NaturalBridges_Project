@@ -1,0 +1,29 @@
+---
+title: "Natural Bridges National Monument Preservation"
+title-block-banner: true
+abstract: "In order to preserve the environment, predictions of future temperature, percipitation, and other features were made based on historical samples from the Natural Bridges National Monument in Utah. In this research, correlations between variables are found through various visualizations and dimensionality reduction to suggest a direciton in which people can act to preserve the environment"
+author: JaeHo Bahng
+date: 5/19/2024
+
+---
+---------------------------
+
+<div style="text-align: center;">
+  <h1>Natural Bridges National Monument</h1>
+  <img src="./images/NBNM.png" alt="Natural Bridges National Monument">
+  <p>https://cdn.britannica.com/08/117908-050-D75717AE/Owachomo-Bridge-Natural-Bridges-National-Monument-Utah.jpg<p>
+</div>
+
+<h2>What is the Natural Bridges National Monument?[@nationalparkservice2018foundation]</h2>
+[Visit the Official Website!](https://www.nps.gov/nabr/learn/management/foundation-document.htm)
+
+
+**Brief Description**
+
+Natural Bridges National Monument is situated 43 miles west of Blanding in San Juan County, Utah, encompassing 7,636.88 acres. The county, the largest in Utah, spans 7,884 square miles within the Colorado Plateau, with elevations ranging from 4,200 to 10,000 feet and receiving only 13 inches of annual precipitation. The park's landscape includes desert canyons and forested mountains.
+
+Historically, the area was first inhabited during the Archaic period (7000 BC to AD 500) by hunter-gatherers, with later occupations by the ancestors of the Puebloan people for farming around AD 700. Subsequent migrations included those from Mesa Verde in the 1200s. By the 1300s, Ancestral Puebloans moved south, followed by Navajos and Paiutes. The site's significance grew after prospector Cass Hite discovered the bridges in 1883, leading to its establishment as Utah’s first national monument in 1908 by President Theodore Roosevelt. The park features three major natural bridges—Sipapu, Kachina, and Owachomo—each representing different stages of geological development, with names reflecting the region's Puebloan heritage and culture.
+
+**Why is it unique?**
+
+Natural Bridges National Monument is unique for having three large natural bridges in close proximity. It also contains significant prehistoric structures and archeological sites with well-preserved wooden features, offering valuable insights into Ancestral Puebloan history on the Colorado Plateau. The park is internationally recognized for its exceptional night sky, being the first designated International Dark Sky Park. Additionally, its deep, moist canyons and diverse ecosystems have been preserved in their natural state due to a long history of protection.

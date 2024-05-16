@@ -1,0 +1,39 @@
+project:
+  type: website
+
+website:
+  title: "Coverage Prediction"
+  navbar:
+    title: "Scholarship project"
+    # style: "docked"
+    background: "primary"
+    foreground: "light"
+    # search: true
+    left:
+      - href: index.qmd
+        text: Introduction
+      - href: cleaning.ipynb
+        text: Data Cleaning
+      - href: EDA.qmd
+        text: EDA
+      - href: Analysis.qmd
+        text: Analysis
+      # - text: "Data"
+      #   menu:
+      #   - href: Data_Gathering.qmd
+      #     text: 4. Data Gathering
+      #   - href: Data_Cleaning.ipynb
+      #     text: 5. Data Cleaning
+      #   - href: Data_Exploration.ipynb
+      #     text: 6. Data Exploration
+
+bibliography: references.bib
+csl: nature.csl
+
+format:
+  html:
+    page-layout: full
+    theme: cosmo
+    toc: true
+
+

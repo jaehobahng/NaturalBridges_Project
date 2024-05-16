@@ -1,0 +1,1441 @@
+---
+title: Dataset Analysis
+author: JaeHo Bahng
+format:
+  html:
+    # embed-resources: true
+    toc: true
+    code-fold: true
+fig-cap-location: bottom
+jupyter: python3
+---
+
+# Introduction
+
+As mentioned in the EDA tab, we will drill down into the dataset with two main depths RCP and scenario.
+For each RCP value (4.5, 8.5), I will conduct the following four types of analysis to compare and contrast important variables that separate the scenarios and effect the annual temperature
+
+**Methodology**
+
+1. Scatterplot
+2. PCA
+3. Pearson Correlation
+4. RMSE
+
+```{python}
+#| code-summary: Import module / Set options and theme
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+import xml.etree.ElementTree as ET
+import plotly.express as px
+import plotly.graph_objects as go
+from scipy.stats import ttest_rel
+from statsmodels.stats.weightstats import ttest_ind
+import numpy as np
+import pingouin as pg
+from scipy.stats import zscore
+import plotly.graph_objects as go
+import pandas as pd
+from plotly.subplots import make_subplots
+import warnings
+import numpy as np
+import pandas as pd
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+import numpy as np
+import pandas as pd
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+import plotly.express as px
+from sklearn.manifold import TSNE
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+warnings.filterwarnings("ignore")
+
+pd.set_option('display.max_columns', None)
+pd.set_option('display.precision', 10)
+```
+
+```{python}
+#| code-summary: Import cleaned data
+
+df = pd.read_csv('../data/cleaned_df.csv')
+df['Location_ID'] = df.groupby(['long', 'lat']).ngroup() + 1
+
+group_list = ['Park', 'long', 'lat', 'veg', 'year', 'TimePeriod', 'RCP','treecanopy', 'Ann_Herb', 'Bare', 'Herb', 'Litter', 'Shrub', 'El', 'Sa','Cl', 'RF', 'Slope', 'E', 'S']
+veg_location = df.drop(labels='scenario',axis=1).groupby(group_list).mean().reset_index()
+# veg_location['T_Annual'] = (veg_location['T_Annual'] - veg_location['T_Annual'].min()) / (veg_location['T_Annual'].max() - veg_location['T_Annual'].min())
+
+
+# Average Scenario Dataset
+# Convert to numeric, coercing errors to NaN
+numeric_series = pd.to_numeric(veg_location['RCP'], errors='coerce')
+
+numeric_series
+
+# Fill NaNs with original non-numeric values
+veg_location['RCP'] = numeric_series.fillna(veg_location['RCP'])
+
+four = veg_location[veg_location['RCP'].isin([4.5])]
+eight = veg_location[veg_location['RCP'].isin([8.5])]
+four_h = veg_location[veg_location['RCP'].isin(['historical'])]
+four_h['RCP'] = 4.5
+eight_h = veg_location[veg_location['RCP'].isin(['historical'])]
+eight_h['RCP'] = 8.5
+
+df_con = pd.concat([four_h, four, eight_h, eight], ignore_index=True)
+df_con['Location_ID'] = df_con.groupby(['long', 'lat']).ngroup() + 1
+
+
+# Scenario Dataset
+# Convert to numeric, coercing errors to NaN
+numeric_series = pd.to_numeric(df['RCP'], errors='coerce')
+
+numeric_series
+
+# Fill NaNs with original non-numeric values
+df['RCP'] = numeric_series.fillna(df['RCP'])
+
+four = df[df['RCP'].isin([4.5])]
+eight = df[df['RCP'].isin([8.5])]
+four_h = df[df['RCP'].isin(['historical'])]
+four_h['RCP'] = 4.5
+eight_h = df[df['RCP'].isin(['historical'])]
+eight_h['RCP'] = 8.5
+
+df_orig = pd.concat([four_h, four, eight_h, eight], ignore_index=True)
+df_orig['Location_ID'] = df_orig.groupby(['long', 'lat']).ngroup() + 1
+```
+
+# Basic Analysis 4.5 vs 8.5
+
+## Scatterplot
+
+With a basic scatterplot, we can see basic correlations of how each numerical variable correlates to either the annual temperature or the annual percipitation. Since RCP 8.5 and RCP 4.5 have different predictions, two plots were used for each scenario.
+
+Firstly, without an additional feature, we can see that the more percipitation, the lower the annual temperature because we can easily draw a line with a negative slope through the scaterred plots. 
+
+```{python}
+#| code-summary: 4.5 vs 8.5 scatterplot
+
+# Assuming df_con is your DataFrame and is already loaded
+# List of columns to use for coloring
+test = df_con.iloc[:,list(range(1, 3))+ [4,6] + list(range(8, len(df_orig.columns)-1))]
+color_columns = list(test.columns)
+rcp_values = test['RCP'].unique()
+
+subplot_titles = [f'RCP {rcp}' for rcp in rcp_values]
+
+# Create figure with subplots for each RCP value
+fig = make_subplots(rows=1, cols=len(rcp_values), shared_yaxes=True, subplot_titles=subplot_titles, horizontal_spacing=0.15)
+
+# Add a scatter trace for each color column and each RCP value
+for i, col in enumerate(color_columns):
+    for j, rcp in enumerate(rcp_values):
+        fig.add_trace(
+            go.Scatter(
+                x=test[(test['year'].isin(range(2060, 2100))) & (test['RCP'] == rcp)]['PPT_Annual'],
+                y=test[(test['year'].isin(range(2060, 2100))) & (test['RCP'] == rcp)]['T_Annual'],
+                mode='markers',
+                marker=dict(
+                    color=test[(test['year'].isin(range(2060, 2100))) & (test['RCP'] == rcp)][col],
+                    colorbar=dict(
+                        # title='Scale',
+                                  tickmode='array',
+                                  tickvals=[round(i,2) for i in np.linspace(start=round(min(test[(test['year'].isin(range(2060, 2100)) & (test['RCP'] == rcp))][col]),2),stop=round(max(test[(test['year'].isin(range(2060, 2100)) & (test['RCP'] == rcp))][col]),2),num=5)],
+                                  ticktext=[round(i,2) for i in np.linspace(start=round(min(test[(test['year'].isin(range(2060, 2100)) & (test['RCP'] == rcp))][col]),2),stop=round(max(test[(test['year'].isin(range(2060, 2100)) & (test['RCP'] == rcp))][col]),2),num=5)],
+                                  y=0.5,
+                                  x= 0.43 + (j*0.58)
+                                  ),
+                                  colorscale='rdpu'
+                ),
+                name=col,
+                visible=True if i == 0 else False,
+                hovertemplate=(
+                    f"<b>{col}</b><br>"
+                    "Precipitation: %{x}<br>"
+                    "Temperature: %{y}<br>"
+                    "RCP: " + str(rcp) + "<br>"
+                    "Value: %{marker.color}<br>"
+                    "<extra></extra>"
+                  )  # This hides the secondary box with trace info  # Only the first trace is visible initially
+            ),
+            row=1, col=j+1
+        )
+
+# Updating the layout to add the title
+fig.update_layout(
+    title={
+        'text': '<b>Annual Precipitation vs Temperature by RCP Scenarios</b>',
+        'x': 0.5,
+        'y': 0.97,
+        'xanchor': 'center'
+    },
+    # title_font=dict(size=20),
+    showlegend=False  # Hide legend since we are using colorbars
+)
+
+# Adding dropdown filter to change visible trace
+dropdown_buttons = [
+    {
+        'label': col,
+        'method': 'update',
+        'args': [
+            {
+                'visible': [col == color_column for color_column in color_columns for _ in rcp_values]
+            },
+            {
+                'title': {'text': f'<b>Annual Precipitation vs Temperature by {col}</b>', 'x':0.5, 'y':0.97},
+                'marker': {'colorbar': {'title': 'Scale'}}
+            }
+        ]
+    }
+    for col in color_columns
+]
+
+fig.update_layout(
+    updatemenus=[
+        {
+            'buttons': dropdown_buttons,
+            'direction': 'down',
+            'showactive': True,
+            'x': 0.5,
+            'xanchor': 'center',
+            'y': 1.19,
+            'yanchor': 'top'
+        }
+    ]
+)
+
+fig.update_xaxes(title_text="Annual Precipitation", row=1, col=1)
+fig.update_yaxes(title_text="Annual Temperature", row=1, col=1)
+fig.update_xaxes(title_text="Annual Precipitation", row=1, col=2)
+
+for annotation in fig['layout']['annotations']:
+    annotation['font'] = {'size': 12, 'color': 'black'}
+
+# Show the figure
+fig.show()
+```
+
+### Useful Variables
+
+By trying each numerical variable as a color metric for the scatter plots, four important features that I found are as below:
+
+1. VWC_Summer_whole
+2. WetSoilDays_Spring_whole
+3. SWA_Fall_whole
+4. Bare
+
+For now, rather than focusing on the seasonality of the variables, lets focus on VWC, WetSoilDays, SWA and Bare. We can infer that it is important to keep the land moist to a certain level and minimize the 'bareness' in the area to lower the temperature. Lets move on to each RCP scenario for a more detailed analysis.
+
+
+```{python}
+#| code-summary: Important Features
+
+feature = 'VWC_Summer_whole'
+fig = px.scatter(df_con[df_con['year'].isin(range(2060,2099))], x="PPT_Annual", y="T_Annual",
+                 color=feature, facet_col="RCP",     
+                 labels={
+        feature: 'Scale'  # Replace with your desired colorbar title
+    })
+fig.update_layout(
+    title={
+        'text': f'<b>Annual Precipitation/Temperature ({feature})</b>',
+        # 'y':0.95,  # This adjusts the position of the title (vertically)
+        'x':0.5,   # Centers the title horizontally
+        'xanchor': 'center',  # Ensures the title is centered at the specified x position
+        # 'yanchor': 'top'  # Ensures the title is positioned based on the top of the text
+    },
+    title_font=dict(size=20)  # Custom font settings
+)
+fig.show()
+
+
+feature = 'WetSoilDays_Spring_whole'
+fig = px.scatter(df_con[df_con['year'].isin(range(2060,2099))], x="PPT_Annual", y="T_Annual",
+                 color=feature, facet_col="RCP",     
+                 labels={
+        feature: 'Scale'  # Replace with your desired colorbar title
+    })
+fig.update_layout(
+    title={
+        'text': f'<b>Annual Precipitation/Temperature ({feature})</b>',
+        # 'y':0.95,  # This adjusts the position of the title (vertically)
+        'x':0.5,   # Centers the title horizontally
+        'xanchor': 'center',  # Ensures the title is centered at the specified x position
+        # 'yanchor': 'top'  # Ensures the title is positioned based on the top of the text
+    },
+    title_font=dict(size=20)  # Custom font settings
+)
+
+fig.show()
+
+feature = 'SWA_Fall_whole'
+fig = px.scatter(df_con[df_con['year'].isin(range(2060,2099))], x="PPT_Annual", y="T_Annual",
+                 color=feature, facet_col="RCP",     
+                 labels={
+        feature: 'Scale'  # Replace with your desired colorbar title
+    })
+fig.update_layout(
+    title={
+        'text': f'<b>Annual Precipitation/Temperature ({feature})</b>',
+        # 'y':0.95,  # This adjusts the position of the title (vertically)
+        'x':0.5,   # Centers the title horizontally
+        'xanchor': 'center',  # Ensures the title is centered at the specified x position
+        # 'yanchor': 'top'  # Ensures the title is positioned based on the top of the text
+    },
+    title_font=dict(size=20)  # Custom font settings
+)
+
+fig.show()
+```
+
+## Pearson Correlation
+
+### RCP4.5
+
+By calculating a Pearson correlation matrix for all numerical variables in the dataset, we can create a heatmap to explore the relationships between different features. This visualization helps identify which features affect each other and highlights those that correlate most strongly with the annual temperature.
+
+In the second plot below, we see that the highest correlators are:
+
+ - Seasonal temperature
+ - Frost days
+
+While these factors cannot be directly influenced, we can take action on the following to mitigate their effects:
+
+ - Extreme short-term dry stress
+ - PET (Potential Evapotranspiration)
+ - SWA (Soil Water Availability)
+ - VWC (Volumetric Water Content)
+
+```{python}
+#| code-summary: Correlation Heatmap
+
+# Calculate the correlation matrix
+corr_matrix = df_orig[(df_orig['TimePeriod']!='Hist') & (df_orig['RCP']==4.5)].iloc[:,8:].corr()
+
+
+# Create an interactive heatmap of the correlation matrix
+fig = px.imshow(corr_matrix,
+                # text_auto=True,  # Automatically add text in each cell
+                labels=dict(color="Correlation"),
+                x=corr_matrix.columns,
+                y=corr_matrix.columns,
+                color_continuous_scale='RdBu_r'
+  )  # Red-Blue color map, reversed
+
+fig.update_layout(
+    width=800,  # Width of the figure in pixels
+    height=900,  # Height of the figure in pixels
+    margin=dict(l=10, r=1, t=50, b=10)  # Reducing margins around the plot
+)
+
+# Adjusting color bar position
+# fig.update_layout(coloraxis_colorbar=dict(
+#     x=0.8  # Adjusts the horizontal position of the color bar
+# ))
+fig.update_layout(title_text='<b>Future Correlation Heatmap : RCP 4.5</b>',  # Bold text using HTML
+                  title_x=0.5)  # Centers the title by setting the x position to 0.5
+
+fig.update_xaxes(tickfont=dict(size=10))  # Sets the font size of x-axis labels
+fig.update_yaxes(tickfont=dict(size=10))  # Sets the font size of y-axis labels
+# fig.update_xaxes(side="bottom")
+fig.show()
+```
+
+```{python}
+#| code-summary: Correlation Feature Importance
+
+# Sort the features by the absolute value of the loading for PCA1
+sorted_loadings = corr_matrix['T_Annual'].abs().sort_values(ascending=False)
+
+# Get the top 10 most influential features
+top_features = sorted_loadings.head(40).index
+
+# Get the actual loadings for these top 10 features
+top_loadings = round(corr_matrix['T_Annual'].loc[top_features,],4)[1:]
+
+# Create a color list based on the sign of the loadings
+colors = ['blue' if val > 0 else 'red' for val in top_loadings]
+
+# Create a bar chart
+fig = go.Figure(data=[go.Bar(
+    x=top_loadings.index,
+    y=top_loadings.abs(),
+    text=top_loadings.values,  # Show the actual values as text
+    textposition='inside',
+    marker_color=colors,
+    showlegend=False
+)])
+
+# Add legend manually
+fig.add_trace(go.Bar(
+    x=[None], y=[None],
+    marker=dict(color='blue'),
+    showlegend=True,
+    name='Positive'
+))
+fig.add_trace(go.Bar(
+    x=[None], y=[None],
+    marker=dict(color='red'),
+    showlegend=True,
+    name='Negative'
+))
+
+# Update layout for better readability
+fig.update_layout(
+    title='<b>Top Features Correlating to Annual Temperature (RCP = 4.5)/b>',
+    xaxis_title='Features',
+    yaxis_title='Absolute PCA1 Loadings',
+    yaxis=dict(tickformat=".2f"),
+    xaxis=dict(
+        tickangle=45,  # Rotate x ticks
+        tickfont=dict(size=10)  # Make the font smaller
+    ),
+    template='plotly_white',
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    ),
+    margin=dict(l=20, r=20, b=20, t=60)
+)
+
+fig.show()
+```
+
+
+### RCP8.5
+
+In the analysis of Pearson correlation for different RCP (Representative Concentration Pathway) scenarios, it was observed that the ranking of features changed between the RCP 4.5 and RCP 8.5 scenarios. Here’s a detailed comparison:
+
+#### Similarities:
+1. Top-Ranked Features: In both scenarios, seasonal temperatures were the highest-ranked features.
+2. Extreme Short-Term Dry Stress: This feature followed closely behind seasonal temperatures in both scenarios.
+3. Frost Days: Features related to frost days also appeared prominently in the middle of the rankings for both scenarios.
+
+#### Differences:
+1. RCP 4.5 Scenario:
+
+    - VWC (Volumetric Water Content) and SWA (Soil Water Availability): These variables appeared towards the 30th to 40th rankings of correlations. This indicates a moderate influence of water-related variables under the RCP 4.5 scenario.
+
+2. RCP 8.5 Scenario:
+
+    - Temperature-Related Variables: There was a noticeable increase in the number of temperature-related variables such as Tmin (minimum temperature) and Tmax (maximum temperature).
+    - Decrease in VWC and SWA Features: The number of VWC and SWA features significantly decreased, and their places in the ranking were taken over by temperature-related variables.
+
+#### Implications:
+1. RCP 4.5: This scenario suggests a balanced influence of both temperature and water-related variables.
+2. RCP 8.5: Under this more extreme scenario, temperature variables become more dominant, overshadowing the influence of water-related variables.
+
+These differences highlight how the impact of climate variables can shift under different greenhouse gas concentration pathways, with temperature effects becoming more pronounced under higher emission scenarios.
+
+**What does this mean?**<br>
+With the knowledge that 8.5 means higher CO2 emission as mentioned in the EDA tab, we can imply that if the RCP8.5 scenario takes place, there is less room for people to prevent temperatures from rising and preserving the environment. This is a logical statement even without the data but the data reinforces the idea by showing less variables in the pearson correlation with the annual temperature.
+
+
+```{python}
+#| code-summary: Correlation Heatmap
+
+# Calculate the correlation matrix
+corr_matrix = df_orig[(df_orig['TimePeriod']!='Hist') & (df_orig['RCP']==8.5)].iloc[:,8:].corr()
+
+
+# Create an interactive heatmap of the correlation matrix
+fig = px.imshow(corr_matrix,
+                # text_auto=True,  # Automatically add text in each cell
+                labels=dict(color="Correlation"),
+                x=corr_matrix.columns,
+                y=corr_matrix.columns,
+                color_continuous_scale='RdBu_r'
+  )  # Red-Blue color map, reversed
+
+fig.update_layout(
+    width=800,  # Width of the figure in pixels
+    height=900,  # Height of the figure in pixels
+    margin=dict(l=10, r=1, t=50, b=10)  # Reducing margins around the plot
+)
+
+# Adjusting color bar position
+# fig.update_layout(coloraxis_colorbar=dict(
+#     x=0.8  # Adjusts the horizontal position of the color bar
+# ))
+fig.update_layout(title_text='<b>Future Correlation Heatmap : RCP 8.5</b>',  # Bold text using HTML
+                  title_x=0.5)  # Centers the title by setting the x position to 0.5
+
+fig.update_xaxes(tickfont=dict(size=10))  # Sets the font size of x-axis labels
+fig.update_yaxes(tickfont=dict(size=10))  # Sets the font size of y-axis labels
+# fig.update_xaxes(side="bottom")
+fig.show()
+```
+
+```{python}
+#| code-summary: Correlation Feature Importance
+
+# Sort the features by the absolute value of the loading for PCA1
+sorted_loadings = corr_matrix['T_Annual'].abs().sort_values(ascending=False)
+
+# Get the top 10 most influential features
+top_features = sorted_loadings.head(30).index
+
+# Get the actual loadings for these top 10 features
+top_loadings = round(corr_matrix['T_Annual'].loc[top_features,],4)[1:]
+
+# Create a color list based on the sign of the loadings
+colors = ['blue' if val > 0 else 'red' for val in top_loadings]
+
+# Create a bar chart
+fig = go.Figure(data=[go.Bar(
+    x=top_loadings.index,
+    y=top_loadings.abs(),
+    text=top_loadings.values,  # Show the actual values as text
+    textposition='inside',
+    marker_color=colors,
+    showlegend=False
+)])
+
+# Add legend manually
+fig.add_trace(go.Bar(
+    x=[None], y=[None],
+    marker=dict(color='blue'),
+    showlegend=True,
+    name='Positive'
+))
+fig.add_trace(go.Bar(
+    x=[None], y=[None],
+    marker=dict(color='red'),
+    showlegend=True,
+    name='Negative'
+))
+
+# Update layout for better readability
+fig.update_layout(
+    title='<b>Top Features Correlating to Annual Temperature</b>',
+    xaxis_title='Features',
+    yaxis_title='Absolute PCA1 Loadings',
+    yaxis=dict(tickformat=".2f"),
+    xaxis=dict(
+        tickangle=45,  # Rotate x ticks
+        tickfont=dict(size=10)  # Make the font smaller
+    ),
+    template='plotly_white',
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    ),
+    margin=dict(l=20, r=20, b=20, t=60)
+)
+
+fig.show()
+```
+
+
+# Scenario Comparison : RCP = 4.5
+For RCP 4.5, we will be comparing Scenario 37(High) vs Scenario 40(Low) to find meaningful insights.
+
+## PCA
+**What is PCA?**<br>
+Principal Component Analysis (PCA) is a statistical technique used to reduce the dimensionality of a dataset while preserving as much variance as possible. It transforms the original variables into a new set of uncorrelated variables called principal components, which are ordered by the amount of variance they capture from the data. The first principal component captures the most variance, followed by the second, and so on. PCA is widely used in data analysis and machine learning for feature reduction, noise reduction, and visualization of high-dimensional data. By simplifying the dataset, PCA can help improve the performance of algorithms and make data more interpretable.
+
+**What will we do with this?**<br>
+We will conduct PCA on each group of RCP to find a pattern in between scenarios and how they group within the reduced dimensionality. Based on how they are grouped and how much each column feature influenced the principal component, we will be able to estimate what features diferentiated different scenarios.
+
+```{python}
+#| code-summary: PCA(RCP = 4.5)
+data = df_orig[(df_orig['RCP']==4.5) & (df_orig['year'].isin(range(2095,2100)))].dropna(axis=1, how='any')
+X = data.iloc[:,list(range(1, 3))+ [4,6] + list(range(8, len(data.columns)-3))]
+
+# Standardize the features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# Apply PCA
+pca = PCA(n_components=10)  # Reduce to 2 components for visualization
+X_pca = pca.fit_transform(X_scaled)
+
+# Add the PCA and cluster results to the DataFrame
+data['PCA1'] = X_pca[:, 0]
+data['PCA2'] = X_pca[:, 1]
+data['PCA3'] = X_pca[:, 2]
+
+# Get the component loadings
+loadings = pca.components_.T
+columns = X.columns
+
+# Create a DataFrame for loadings
+loadings_df = pd.DataFrame(loadings, columns=['PCA1', 'PCA2', 'PCA3', 'PCA4', 'PCA5', 'PCA6', 'PCA7', 'PCA8', 'PCA9', 'PCA10'], index=columns)
+
+# Get the explained variance ratio
+explained_variance_ratio = pca.explained_variance_ratio_
+
+# Cumulative explained variance
+cumulative_explained_variance = np.cumsum(explained_variance_ratio)
+```
+
+### Explained Variance
+By using the elbow method, we can guess that we need principal components 1, 2, and maybe 3. Lets plot the points out along with 
+
+```{python}
+#| code-summary: Varience Ratio
+
+# Create a list of x-axis labels from PCA1 to PCA10
+x_labels = [f'PCA{i+1}' for i in range(len(explained_variance_ratio))]
+
+# Create a line chart for explained variance ratio
+fig = go.Figure(data=go.Scatter(
+    x=x_labels,
+    y=explained_variance_ratio,
+    mode='lines+markers',
+    text=explained_variance_ratio,
+    textposition='top center'
+))
+
+# Update layout for better readability
+fig.update_layout(
+    title='<b>Explained Variance Ratio by Principal Components</b>',
+    xaxis_title='Principal Components',
+    yaxis_title='Explained Variance Ratio',
+    yaxis=dict(tickformat=".2%", range=[0, 1.1 * explained_variance_ratio.max()]),  # Adjust the range as needed
+    template='plotly_white',
+    margin=dict(l=50, r=50, b=50, t=50)  # Adjust the padding as needed
+)
+
+fig.show()
+```
+
+### PCA feature importance
+In order to interpret visualizations made from principle components, we need to understand what features effect each component. The following bar graphs are features that influence each component the most ranked by their absolute value and the direction(Positive, Negative) differentiated by color.
+
+```{python}
+#| code-summary: Feature Importance Plots
+
+# Sort the features by the absolute value of the loading for PCA1
+sorted_loadings = loadings_df['PCA1'].abs().sort_values(ascending=False)
+
+# Get the top 10 most influential features
+top_features = sorted_loadings.head(30).index
+
+# Get the actual loadings for these top 10 features
+top_loadings = round(loadings_df.loc[top_features, 'PCA1'],4)
+
+# Create a color list based on the sign of the loadings
+colors = ['blue' if val > 0 else 'red' for val in top_loadings]
+
+# Create a bar chart
+fig = go.Figure(data=[go.Bar(
+    x=top_loadings.index,
+    y=top_loadings.abs(),
+    text=top_loadings.values,  # Show the actual values as text
+    textposition='inside',
+    marker_color=colors,
+    showlegend=False
+)])
+
+# Add legend manually
+fig.add_trace(go.Bar(
+    x=[None], y=[None],
+    marker=dict(color='blue'),
+    showlegend=True,
+    name='Positive'
+))
+fig.add_trace(go.Bar(
+    x=[None], y=[None],
+    marker=dict(color='red'),
+    showlegend=True,
+    name='Negative'
+))
+
+# Update layout for better readability
+fig.update_layout(
+    title='<b>Top 20 Most Influential Features on PCA1</b>',
+    xaxis_title='Features',
+    yaxis_title='Absolute PCA1 Loadings',
+    yaxis=dict(tickformat=".2f"),
+    template='plotly_white',
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    ),
+    margin=dict(l=20, r=20, b=20, t=60)
+)
+
+fig.show()
+
+# Sort the features by the absolute value of the loading for PCA1
+sorted_loadings = loadings_df['PCA2'].abs().sort_values(ascending=False)
+
+# Get the top 10 most influential features
+top_features = sorted_loadings.head(30).index
+
+# Get the actual loadings for these top 10 features
+top_loadings = round(loadings_df.loc[top_features, 'PCA2'],4)
+
+# Create a color list based on the sign of the loadings
+colors = ['blue' if val > 0 else 'red' for val in top_loadings]
+
+# Create a bar chart
+fig = go.Figure(data=[go.Bar(
+    x=top_loadings.index,
+    y=top_loadings.abs(),
+    text=top_loadings.values,  # Show the actual values as text
+    textposition='inside',
+    marker_color=colors,
+    showlegend=False
+)])
+
+# Add legend manually
+fig.add_trace(go.Bar(
+    x=[None], y=[None],
+    marker=dict(color='blue'),
+    showlegend=True,
+    name='Positive'
+))
+fig.add_trace(go.Bar(
+    x=[None], y=[None],
+    marker=dict(color='red'),
+    showlegend=True,
+    name='Negative'
+))
+
+# Update layout for better readability
+fig.update_layout(
+    title='<b>Top 20 Most Influential Features on PCA2</b>',
+    xaxis_title='Features',
+    yaxis_title='Absolute PCA1 Loadings',
+    yaxis=dict(tickformat=".2f"),
+    template='plotly_white',
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    ),
+    margin=dict(l=20, r=20, b=20, t=60)
+)
+
+fig.show()
+
+# Sort the features by the absolute value of the loading for PCA1
+sorted_loadings = loadings_df['PCA3'].abs().sort_values(ascending=False)
+
+# Get the top 10 most influential features
+top_features = sorted_loadings.head(30).index
+
+# Get the actual loadings for these top 10 features
+top_loadings = round(loadings_df.loc[top_features, 'PCA3'],4)
+
+# Create a color list based on the sign of the loadings
+colors = ['blue' if val > 0 else 'red' for val in top_loadings]
+
+# Create a bar chart
+fig = go.Figure(data=[go.Bar(
+    x=top_loadings.index,
+    y=top_loadings.abs(),
+    text=top_loadings.values,  # Show the actual values as text
+    textposition='inside',
+    marker_color=colors,
+    showlegend=False
+)])
+
+# Add legend manually
+fig.add_trace(go.Bar(
+    x=[None], y=[None],
+    marker=dict(color='blue'),
+    showlegend=True,
+    name='Positive'
+))
+fig.add_trace(go.Bar(
+    x=[None], y=[None],
+    marker=dict(color='red'),
+    showlegend=True,
+    name='Negative'
+))
+
+# Update layout for better readability
+fig.update_layout(
+    title='<b>Top 20 Most Influential Features on PCA3</b>',
+    xaxis_title='Features',
+    yaxis_title='Absolute PCA1 Loadings',
+    yaxis=dict(tickformat=".2f"),
+    template='plotly_white',
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    ),
+    margin=dict(l=20, r=20, b=20, t=60)
+)
+
+fig.show()
+```
+
+### 2D PCA
+When conducting a 2D PCA analysis for all scenarios, the overall trend indicates that within each scenario, PCA1 primarily influences the data points. In contrast, between different scenarios, PCA2 is the key differentiator.
+
+*What does that mean?*<br>
+The features that predominantly affect PCA1 are VWC (Volumetric Water Content in soil) and SWA (Soil Water Availability). This suggests that changes in these variables have the most significant impact within each scenario, reflecting variations over time or different years.
+
+On the other hand, the features that most influence PCA2 are transpiration, the correlation between temperature and precipitation, evaporation, and the number of wet soil days. These features appear to distinguish between different scenarios, implying that they are critical in influencing temperature predictions.
+
+**But is this the case for scenario 37 and 40?**<br>
+As shown in the second plot, we can see that neigher PCA 1 nor PCA2 can identify a pattern in which the two scenarios are divided. 
+
+We could guess that scenario 37 eigher has a higher PCA2 or has both a lower PCA2 and PCA1, and scenario 40 seems to be somewhere in between the two groups of scenario 37. 
+
+We'll add a third component to our analysis to see if we can gain any additional insight.
+
+```{python}
+#| code-summary: 2D PCA Plots
+
+# Visualize the results with Plotly
+fig = px.scatter(
+    data,
+    x='PCA1',
+    y='PCA2',
+    color='scenario',
+    title='<b>PCA For All Scenarios (RCP = 4.5)</b>',
+    labels={'PCA1': 'PCA1', 'PCA2': 'PCA2'},
+    opacity=0.5
+)
+
+fig.update_layout(
+    margin=dict(l=10, r=10, b=10, t=40),  # Adjust the values as needed
+    title_x=0.5,
+    title_y=0.95,
+)
+
+fig.show()
+
+fig = px.scatter(
+    data[data['scenario'].isin(['sc37','sc40'])],
+    x='PCA1',
+    y='PCA2',
+    color='scenario',
+    title='<b>PCA for Scenario 37 vs 40 (RCP = 4.5)</b>',
+    labels={'PCA1': 'PCA1', 'PCA2': 'PCA2'},
+    opacity=0.5
+)
+
+fig.update_layout(
+    margin=dict(l=10, r=10, b=10, t=40),  # Adjust the values as needed
+    title_x=0.5,
+    title_y=0.95,
+)
+
+fig.show()
+```
+
+### 3D PCA
+What type of information can we retrieve from the third PCA that we couldn't from the 2D PCA plot?
+
+Just by looking at the first plot with all scenarios, we can tell that the third PCA is also an important component when differentiating scenarios.
+
+**How about scenario 37 and 40?**<br>
+We've found the visualization we were looking for! PCA3 seems to be the best component to distinguish the two scenarios which had the most differentiation. 
+
+*What does this mean?*<br>
+Note that 37 had the highest temperature and 40 had the lowest temperature from RCP 4.5. Since scenario 37 can be distinguished with the points with the higher values of PCA3, we can look at the feature importance chart for PCA3 where the positive top ranked features would mean that an increase in the feature means higher temperature and lower values of the negative features mean higher temperature, and the opposite would apply for scenario 40.
+
+**Results**<br>
+Unfortunately, the highest ranked features for PCA3 are mostly directly related to the temperature or variables that can't seem to be altered for future improvement such as frost days, evaporation, and southness. One fact we can takeaway is that the PET or potential evapotranspiration which is a factor we can prevent or make higher with future efforts. The lower the potential evapotranspiration, the higher the temperature. 
+
+```{python}
+#| code-summary: 3D PCA Plots
+
+# Visualize the results with Plotly in 3D
+fig = px.scatter_3d(
+    data,
+    x='PCA1',
+    y='PCA2',
+    z='PCA3',
+    color='scenario',
+    title='<b>3D PCA For All Scenarios</b>',
+    labels={'PCA1': 'PCA1', 'PCA2': 'PCA2', 'PCA3': 'PCA3'},
+    opacity=0.5,
+    size_max=0.1
+)
+
+fig.update_traces(marker=dict(size=3))  # Adjust the size value as needed
+
+
+# Update layout to adjust padding and margins
+fig.update_layout(
+    margin=dict(l=5, r=5, b=5, t=20),  # Adjust the values as needed
+    title_x=0.5,
+    title_y=0.95,
+    scene=dict(
+        xaxis=dict(title='PCA1'),
+        yaxis=dict(title='PCA2'),
+        zaxis=dict(title='PCA3'),
+                camera=dict(
+            eye=dict(x=0, y=2, z=0)
+                )
+    )
+)
+fig.show()
+
+fig = px.scatter_3d(
+    data[data['scenario'].isin(['sc37','sc40'])],
+    x='PCA1',
+    y='PCA2',
+    z='PCA3',
+    color='scenario',
+    title='<b>3D PCA for Scenario 37 vs 40</b>',
+    labels={'PCA1': 'PCA1', 'PCA2': 'PCA2', 'PCA3': 'PCA3'},
+    opacity=0.5,
+    size_max=0.1
+)
+
+fig.update_traces(marker=dict(size=3))  # Adjust the size value as needed
+
+
+# Update layout to adjust padding and margins
+fig.update_layout(
+    margin=dict(l=5, r=5, b=5, t=20),  # Adjust the values as needed
+    title_x=0.5,
+    title_y=0.95,
+    scene=dict(
+        xaxis=dict(title='PCA1'),
+        yaxis=dict(title='PCA2'),
+        zaxis=dict(title='PCA3'),
+                camera=dict(
+            eye=dict(x=0, y=2, z=0)
+                )
+    )
+)
+fig.show()
+```
+
+## RMSE
+
+
+To identify the most significant differences between two scenarios, I employed another method: calculating the RMSE (Root Mean Square Error) for each column. Given that both scenarios have the same number of data points, this approach provided an effective way to quantify the differences. Before performing the RMSE calculations, I standardized the data points to ensure consistency.
+
+What was particularly interesting is that the features identified as "most different" by the RMSE method were distinct from those highlighted by Pearson correlation and PCA. Despite this, all three methods pointed in the same general direction. In addition to temperature and precipitation, the RMSE method revealed that a series of wet soil days, volumetric water content, and soil water availability showed significant differences between the scenarios. This highlighted how different methods can provide varied insights while still aligning on key differences.
+
+
+
+```{python}
+#| code-summary: RMSE
+
+sc37 = df_orig[df_orig['scenario'] == 'sc37']
+sc40 = df_orig[df_orig['scenario'] == 'sc40']
+
+df1 = sc37.iloc[:,8:-3]
+df2 = sc40.iloc[:,8:-3]
+
+# Function to calculate z-scores
+def standardize(df):
+    return df.apply(zscore)
+
+# Standardize both dataframes
+z_df1 = standardize(df1)
+z_df2 = standardize(df2)
+
+# Calculate Absolute Difference of Z-Scores
+abs_diff_z_scores = np.abs(z_df1 - z_df2)
+
+# Mean Absolute Difference
+mean_abs_diff = abs_diff_z_scores.mean()
+
+# RMSE
+rmse = np.sqrt(np.mean((z_df1.reset_index(drop=True) - z_df2.reset_index(drop=True))**2, axis=0))
+
+rmse_sort = rmse.sort_values(ascending=False).head(30)
+
+# Create a bar chart
+fig = go.Figure(data=[go.Bar(
+    x=rmse_sort.keys(),
+    y=rmse_sort.values,
+    text=[round(i,4) for i in rmse_sort.values],  # Show the actual values as text
+    textposition='inside',
+    # marker_color=colors,
+    showlegend=False
+)])
+
+# Update layout for better readability
+fig.update_layout(
+    title='<b>Scenario 37 vs 40 RMSE of components</b>',
+    xaxis_title='Features',
+    yaxis_title='Absolute PCA1 Loadings',
+    yaxis=dict(tickformat=".2f"),
+    template='plotly_white',
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    ),
+    margin=dict(l=20, r=20, b=20, t=60)
+)
+
+fig.show()
+```
+
+# Scenario Comparison : RCP = 8.5
+For RCP 8.5, we will be comparing Scenario 60(High) vs Scenario 58(Low) and we will use the same methodology as RCP 4.5 to see if there is a difference in features that affect Annual Temperature according to the RCP values.
+
+## t-SNE
+
+**What is t-SNE?**
+
+t-SNE (t-distributed Stochastic Neighbor Embedding) is a dimensionality reduction technique particularly effective in visualizing high-dimensional data. It works by converting similarities between data points into joint probabilities and minimizing the Kullback-Leibler divergence between these joint probabilities in the high-dimensional and low-dimensional space. This results in a map where similar objects are modeled by nearby points and dissimilar objects by distant points. When interpreting a t-SNE plot, clusters indicate groups of similar data points, suggesting patterns or structures within the data. However, the distances between clusters and the exact positioning can sometimes be arbitrary, so the focus should be on the local neighborhood structures rather than global distances.
+
+**Analysis Methodology**<br>
+With a similar flow of analysis we conducted with the RCP = 4.5 scenario with PCA, we will first plot the 2D outcome of t-SNE and proceed to the 3D scatterplot. 
+
+One difference between PCA and t-SNE is that the values of components in PCA do not change no matter how many components are calculated, therefore the same feature importance plot could be applicable for any dimensionality. However, t-SNE gives different output from when 3 components are calculated and 2 components are calculated. Therefore separate feature importance plots are necessary to correctly interpret the outcome.
+
+### 2D t-SNE Plot
+
+The analysis demonstrates that t-SNE effectively groups similar data points together, with distinct clusters representing unique scenario and year combinations. This clear grouping contrasts with PCA, which stretched data points across an axis to portray differences within a scenario. In comparing scenarios 60 and 58, the second plot shows most points are separated by the t-SNE1 axis. However, scenario 60's data for the year 2098 overlaps with scenario 58, indicating that while t-SNE1 is generally effective in differentiating between the two scenarios, it has limitations.
+
+The third plot highlights which features from the original dataframe correlate with the newly created t-SNE1 feature. It turns out that SWA (Soil Water Availability) and VWC (Volumetric Water Content) are the main variables correlating with t-SNE1. This finding differs from the PCA analysis with RCP4.5, where VWC and SWA were more involved in changes within scenarios rather than differentiating between them. However, the misclassification of scenario 60's 2098 data suggests that t-SNE1 might not be entirely accurate for all data points.
+
+Given these observations, moving to a 3D t-SNE analysis makes sense. By incorporating an additional dimension, 3D t-SNE could provide a more accurate and nuanced clustering of data points, potentially avoiding the misclassifications observed with just t-SNE1. This approach could lead to better separation and a clearer understanding of the relationships between different scenarios and years.
+
+```{python}
+#| code-summary: t-SNE(RCP = 8.5)
+
+data_1 = df_orig[(df_orig['RCP']==8.5) & (df_orig['year'].isin(range(2095,2100)))].dropna(axis=1, how='any')
+X = data.iloc[:,list(range(1, 3))+ list(range(8, len(data.columns)-3))]
+y = data.iloc[:,len(data.columns)-3]
+
+# Standardize the features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+scaler = StandardScaler()
+y_scaled = pd.Series(scaler.fit_transform(y.values.reshape(-1,1)).flatten())
+
+# Perform t-SNE on the features
+tsne = TSNE(n_components=2, random_state=42)
+tsne_results = tsne.fit_transform(X_scaled)
+
+data_1['tsne1'] = tsne_results[:, 0]
+data_1['tsne2'] = tsne_results[:, 1]
+
+# Visualize the results with Plotly
+fig = px.scatter(
+    data_1,
+    x='tsne1',
+    y='tsne2',
+    color='scenario',
+    title='<b>t-SNE For All Scenarios (RCP = 8.5)</b>',
+    labels={'tsne1': 't-SNE1', 'tsne2': 't-SNE2'},
+    opacity=0.5,
+    hover_data={'Location_ID': True, 'year':True}
+)
+
+fig.update_layout(
+    margin=dict(l=10, r=10, b=10, t=40),  # Adjust the values as needed
+    title_x=0.5,
+    title_y=0.95,
+)
+
+fig.show()
+
+# Visualize the results with Plotly
+fig = px.scatter(
+    data_1[data_1['scenario'].isin(['sc60','sc58'])],
+    x='tsne1',
+    y='tsne2',
+    color='scenario',
+    title='<b>t-SNE For Scenario 60 and 58 (RCP = 8.5)</b>',
+    labels={'tsne1': 't-SNE1', 'tsne2': 't-SNE2'},
+    opacity=0.5,
+    hover_data={'Location_ID': True, 'year':True}
+)
+
+fig.update_layout(
+    margin=dict(l=10, r=10, b=10, t=40),  # Adjust the values as needed
+    title_x=0.5,
+    title_y=0.95,
+)
+
+fig.show()
+```
+
+```{python}
+corr_matrix = data_1.iloc[:,8:].corr()
+#| code-summary: Correlation Feature Importance
+
+# Sort the features by the absolute value of the loading for PCA1
+sorted_loadings_1 = corr_matrix['tsne1'].abs().sort_values(ascending=False)
+top_features_1 = sorted_loadings_1.head(30).index
+top_loadings_1 = round(corr_matrix['tsne1'].loc[top_features_1,],4)[1:]
+colors_1 = ['blue' if val > 0 else 'red' for val in top_loadings_1]
+
+# Create a bar chart
+fig = go.Figure(data=[go.Bar(
+    x=top_loadings_1.index,
+    y=top_loadings_1.abs(),
+    text=top_loadings_1.values,  # Show the actual values as text
+    textposition='inside',
+    marker_color=colors_1,
+    showlegend=False
+)])
+
+# Add legend manually
+fig.add_trace(go.Bar(
+    x=[None], y=[None],
+    marker=dict(color='blue'),
+    showlegend=True,
+    name='Positive'
+))
+fig.add_trace(go.Bar(
+    x=[None], y=[None],
+    marker=dict(color='red'),
+    showlegend=True,
+    name='Negative'
+))
+
+# Update layout for better readability
+fig.update_layout(
+    title='<b>Top Features Correlating to t-SNE1</b>',
+    xaxis_title='Features',
+    yaxis_title='Absolute t-SNE1 Loadings',
+    yaxis=dict(tickformat=".2f"),
+    xaxis=dict(
+        tickangle=45,  # Rotate x ticks
+        tickfont=dict(size=10)  # Make the font smaller
+    ),
+    template='plotly_white',
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    ),
+    margin=dict(l=20, r=20, b=20, t=60)
+)
+
+fig.show()
+```
+
+### 3D t-SNE Plot
+
+To understand the features that correlate most with t-SNE3, let's follow a similar approach as we did with the PCA analysis. Here’s a structured plan to proceed with this analysis:
+
+1. Plotting all Scenarios using 3D t-SNE:
+
+    - Generate a 3D scatter plot of all scenarios using the t-SNE results. Color-code the points based on different scenarios to visualize clustering.
+
+2. Comparison of Scenarios 60 and 58:
+
+    - Create another 3D scatter plot but include only scenarios 60 and 58.
+    - Observe the separation between these two scenarios on the t-SNE3 axis and determine the effectiveness of a decision boundary.
+
+3. Correlating Features with t-SNE3:
+
+    - Calculate the correlation between each feature and t-SNE3.
+    - Rank the features based on their correlation values.
+
+4. Results:
+    - Like our third component in PCA, t-SNE3 is mostly correlated by the seasonal temperatures directly, following with SA, Litter, S, SWA, Bare and Shrub. 
+
+```{python}
+#| code-summary: 3D t-SNE (RCP = 8.5)
+data = df_orig[(df_orig['RCP']==8.5) & (df_orig['year'].isin(range(2095,2100)))].dropna(axis=1, how='any')
+X = data.iloc[:,list(range(1, 3))+ list(range(8, len(data.columns)-3))]
+y = data.iloc[:,len(data.columns)-3]
+
+# Standardize the features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+scaler = StandardScaler()
+y_scaled = pd.Series(scaler.fit_transform(y.values.reshape(-1,1)).flatten())
+
+# Perform t-SNE on the features
+tsne = TSNE(n_components=3, random_state=42)
+tsne_results = tsne.fit_transform(X_scaled)
+
+data['tsne1'] = tsne_results[:, 0]
+data['tsne2'] = tsne_results[:, 1]
+data['tsne3'] = tsne_results[:, 2]
+
+# Visualize the results with Plotly in 3D
+fig = px.scatter_3d(
+    data,
+    x='tsne1',
+    y='tsne2',
+    z='tsne3',
+    color='scenario',
+    title='<b>3D t-SNE For All Scenarios</b>',
+    labels={'tsne1': 't-SNE1', 'tsne2': 't-SNE2', 'tsne3': 't-SNE3'},
+    opacity=0.5,
+    size_max=0.1,
+    hover_data={'Location_ID': True, 'year': True}
+    
+)
+
+fig.update_traces(marker=dict(size=3))  # Adjust the size value as needed
+
+
+# Update layout to adjust padding and margins
+fig.update_layout(
+    margin=dict(l=5, r=5, b=5, t=20),  # Adjust the values as needed
+    title_x=0.5,
+    title_y=0.95,
+    scene=dict(
+        xaxis=dict(title='t-SNE1'),
+        yaxis=dict(title='t-SNE2'),
+        zaxis=dict(title='t-SNE3'),
+                camera=dict(
+            eye=dict(x=2, y=0, z=0.1)
+                )
+    )
+)
+fig.show()
+
+# Visualize the results with Plotly in 3D
+fig = px.scatter_3d(
+    data[data['scenario'].isin(['sc60','sc58'])],
+    x='tsne1',
+    y='tsne2',
+    z='tsne3',
+    color='scenario',
+    title='<b>3D t-SNE For Scenario 60 and 58</b>',
+    labels={'tsne1': 't-SNE1', 'tsne2': 't-SNE2', 'tsne3': 't-SNE3'},
+    opacity=0.5,
+    size_max=0.1,
+    hover_data={'Location_ID': True, 'year': True}
+    
+)
+
+fig.update_traces(marker=dict(size=3))  # Adjust the size value as needed
+
+
+# Update layout to adjust padding and margins
+fig.update_layout(
+    margin=dict(l=5, r=5, b=5, t=20),  # Adjust the values as needed
+    title_x=0.5,
+    title_y=0.95,
+    scene=dict(
+        xaxis=dict(title='t-SNE1'),
+        yaxis=dict(title='t-SNE2'),
+        zaxis=dict(title='t-SNE3'),
+                camera=dict(
+            eye=dict(x=2, y=0, z=0.1)
+                )
+    )
+)
+fig.show()
+```
+
+```{python}
+#| code-summary: t-SNE correlation(RCP=8.5)
+
+corr_matrix = data.iloc[:,8:].corr()
+#| code-summary: Correlation Feature Importance
+
+# Sort the features by the absolute value of the loading for PCA1
+sorted_loadings_3 = corr_matrix['tsne3'].abs().sort_values(ascending=False)
+top_features_3 = sorted_loadings_3.head(30).index
+top_loadings_3 = round(corr_matrix['tsne3'].loc[top_features_3,],4)[1:]
+colors_3 = ['blue' if val > 0 else 'red' for val in top_loadings_3]
+
+sorted_loadings_2 = corr_matrix['tsne2'].abs().sort_values(ascending=False)
+top_features_2 = sorted_loadings_2.head(30).index
+top_loadings_2 = round(corr_matrix['tsne2'].loc[top_features_2,],4)[1:]
+colors_2 = ['blue' if val > 0 else 'red' for val in top_loadings_2]
+
+sorted_loadings_1 = corr_matrix['tsne1'].abs().sort_values(ascending=False)
+top_features_1 = sorted_loadings_1.head(30).index
+top_loadings_1 = round(corr_matrix['tsne1'].loc[top_features_1,],4)[1:]
+colors_1 = ['blue' if val > 0 else 'red' for val in top_loadings_1]
+
+# Create a bar chart
+fig = go.Figure(data=[go.Bar(
+    x=top_loadings_3.index,
+    y=top_loadings_3.abs(),
+    text=top_loadings_3.values,  # Show the actual values as text
+    textposition='inside',
+    marker_color=colors_3,
+    showlegend=False
+)])
+
+# Add legend manually
+fig.add_trace(go.Bar(
+    x=[None], y=[None],
+    marker=dict(color='blue'),
+    showlegend=True,
+    name='Positive'
+))
+fig.add_trace(go.Bar(
+    x=[None], y=[None],
+    marker=dict(color='red'),
+    showlegend=True,
+    name='Negative'
+))
+
+# Update layout for better readability
+fig.update_layout(
+    title='<b>Top Features Correlating to t-SNE3</b>',
+    xaxis_title='Features',
+    yaxis_title='Absolute t-SNE3 Loadings',
+    yaxis=dict(tickformat=".2f"),
+    xaxis=dict(
+        tickangle=45,  # Rotate x ticks
+        tickfont=dict(size=10)  # Make the font smaller
+    ),
+    template='plotly_white',
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    ),
+    margin=dict(l=20, r=20, b=20, t=60)
+)
+
+fig.show()
+
+# Create a bar chart
+fig = go.Figure(data=[go.Bar(
+    x=top_loadings_2.index,
+    y=top_loadings_2.abs(),
+    text=top_loadings_2.values,  # Show the actual values as text
+    textposition='inside',
+    marker_color=colors_2,
+    showlegend=False
+)])
+
+# Add legend manually
+fig.add_trace(go.Bar(
+    x=[None], y=[None],
+    marker=dict(color='blue'),
+    showlegend=True,
+    name='Positive'
+))
+fig.add_trace(go.Bar(
+    x=[None], y=[None],
+    marker=dict(color='red'),
+    showlegend=True,
+    name='Negative'
+))
+
+# Update layout for better readability
+fig.update_layout(
+    title='<b>Top Features Correlating to t-SNE2</b>',
+    xaxis_title='Features',
+    yaxis_title='Absolute t-SNE2 Loadings',
+    yaxis=dict(tickformat=".2f"),
+    xaxis=dict(
+        tickangle=45,  # Rotate x ticks
+        tickfont=dict(size=10)  # Make the font smaller
+    ),
+    template='plotly_white',
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    ),
+    margin=dict(l=20, r=20, b=20, t=60)
+)
+
+fig.show()
+```
+
+
+
+
+## RMSE
+
+Although there are minor differences, the RMSE between the same columns of different scenarios were similar to the comparison in the RCP 4.5 scenario. This was somewhat called for since numbers were generated by a simulator following a certain logic.
+
+```{python}
+#| code-summary: RMSE
+
+sc60 = df_orig[df_orig['scenario'] == 'sc60']
+sc58 = df_orig[df_orig['scenario'] == 'sc58']
+
+df1 = sc60.iloc[:,8:-3]
+df2 = sc58.iloc[:,8:-3]
+
+# Function to calculate z-scores
+def standardize(df):
+    return df.apply(zscore)
+
+# Standardize both dataframes
+z_df1 = standardize(df1)
+z_df2 = standardize(df2)
+
+# Calculate Absolute Difference of Z-Scores
+abs_diff_z_scores = np.abs(z_df1 - z_df2)
+
+# Mean Absolute Difference
+mean_abs_diff = abs_diff_z_scores.mean()
+
+# RMSE
+rmse = np.sqrt(np.mean((z_df1.reset_index(drop=True) - z_df2.reset_index(drop=True))**2, axis=0))
+
+rmse_sort = rmse.sort_values(ascending=False).head(30)
+
+# Create a bar chart
+fig = go.Figure(data=[go.Bar(
+    x=rmse_sort.keys(),
+    y=rmse_sort.values,
+    text=[round(i,4) for i in rmse_sort.values],  # Show the actual values as text
+    textposition='inside',
+    # marker_color=colors,
+    showlegend=False
+)])
+
+# Update layout for better readability
+fig.update_layout(
+    title='<b>Scenario 60 vs 80 RMSE of components</b>',
+    xaxis_title='Features',
+    yaxis_title='Absolute PCA1 Loadings',
+    yaxis=dict(tickformat=".2f"),
+    template='plotly_white',
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    ),
+    margin=dict(l=20, r=20, b=20, t=60)
+)
+
+fig.show()
+```
+
+# Conclusion
+
+**Impact of RCP Scenarios on Temperature and Environment**
+The analysis highlights the significant influence of Representative Concentration Pathway (RCP) scenarios on temperature variations and environmental preservation. This was initially demonstrated through a straightforward time series plot in the Exploratory Data Analysis (EDA) tab. Further research, specifically examining the annual temperature Pearson correlation within the RCP 8.5 scenario, reinforced this finding. The data indicates that under the RCP 8.5 scenario, individual actions have minimal impact on temperature changes, underscoring the critical importance of global policy and large-scale interventions.
+
+**Actionable Measures Across RCP Scenarios**
+Despite the varying degrees of impact the actions may have under different RCP scenarios, the measures we can take remain consistent across both RCP 4.5 and RCP 8.5 scenarios. However, it is worth noting that similar actions are expected to have a more substantial effect on temperature reduction under the RCP 4.5 scenario compared to the RCP 8.5 scenario.
+
+Key variables identified across all scenarios include Volumetric Water Content (VWC), Wet Soil Days, Soil Water Availability (SWA), and extreme short-term dry stress, all of which are related to soil moisture. Although the precise levels of soil moisture and humidity require further research, our findings indicate that the most significant differences between the highest and lowest scenarios of each RCP variable are linked to soil moisture. This suggests that focusing on maintaining and improving soil moisture levels is crucial for environmental preservation.
+
+
