@@ -22,7 +22,26 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
-</style>
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
 
 
 <script src="site_libs/quarto-nav/quarto-nav.js"></script>
@@ -199,17 +218,16 @@ ul.task-list li input[type="checkbox"] {
 <p>Lets talk about some future actions we can take to lower the temperature based on the features that we hypothesized would effect annual temperature the most.</p>
 <p><em>We will talk about actions for features we can work on. For example, percipitation related features will not be discussed regardless of their ranking.</em></p>
 <ol type="1">
-<li>Soil Water Availability / Volumetric Water Content (High value = Low Temperature)</li>
+<li>Soil Water Availability<span class="citation" data-cites="nrcs2022conservation"><sup><a href="#ref-nrcs2022conservation" role="doc-biblioref">1</a></sup></span> / Volumetric Water Content<span class="citation" data-cites="okstate2022soil"><sup><a href="#ref-okstate2022soil" role="doc-biblioref">2</a></sup></span> (High value = Low Temperature)</li>
 </ol>
 <ul>
 <li><p>Why does this happen? :</p>
 <p>Achieving high soil water availability (SWA) with low volumetric water content (VWC) involves enhancing soil structure, managing compaction, optimizing irrigation, and using appropriate soil amendments. Adding organic matter and using cover crops improve soil structure and porosity, while minimal tillage and subsoiling reduce compaction. Efficient irrigation methods like drip irrigation and the use of soil conditioners such as gypsum help make water readily available to plants. Mulching and selecting deep-rooted or drought-tolerant plants also contribute to maintaining optimal soil moisture without excessive VWC.</p></li>
 <li><p>What measures can we take to keep this value high? :</p>
 <ul>
-<li>Incorporate Organic Matter: Regularly add compost, manure, or green manures to improve soil structure and porosity.</li>
-<li>Use Cover Crops: Plant cover crops to enhance organic content, improve soil structure, and reduce erosion.</li>
-<li>Practice Minimal Tillage: Avoid excessive tillage to prevent soil compaction and maintain good soil structure.</li>
-<li>Subsoiling: Use subsoiling or deep ripping to break up compacted layers and enhance water infiltration and root penetration.</li>
+<li>Incorporate Organic Matter: Regularly add compost, manure, or green manures to improve soil structure and porosity.<span class="citation" data-cites="usu2022soil"><sup><a href="#ref-usu2022soil" role="doc-biblioref">3</a></sup></span></li>
+<li>Use Cover Crops: Plant cover crops to enhance organic content, improve soil structure, and reduce erosion.<span class="citation" data-cites="sare2022cover"><sup><a href="#ref-sare2022cover" role="doc-biblioref">4</a></sup></span></li>
+<li>Practice Minimal Tillage: Avoid excessive tillage to prevent soil compaction and maintain good soil structure.<span class="citation" data-cites="ucdavis2022tillage"><sup><a href="#ref-ucdavis2022tillage" role="doc-biblioref">5</a></sup></span></li>
 </ul></li>
 </ul>
 <ol start="2" type="1">
@@ -218,8 +236,8 @@ ul.task-list li input[type="checkbox"] {
 <ul>
 <li>Why does this happen? :
 <ol type="1">
-<li>Low Plant Density : Areas with sparse vegetation or low plant density will have lower overall transpiration rates. With fewer plants to uptake and transpire water, the soil can retain more moisture, leading to high VWC</li>
-<li>Dormant/Stressed Plants : Plants that are dormant (during certain seasons) or stressed (due to disease or poor health) may have reduced transpiration rates. This can lead to soil retaining more water, increasing VWC.</li>
+<li>Low Plant Density<span class="citation" data-cites="usace2022evaporation"><sup><a href="#ref-usace2022evaporation" role="doc-biblioref">6</a></sup></span> : Areas with sparse vegetation or low plant density will have lower overall transpiration rates. With fewer plants to uptake and transpire water, the soil can retain more moisture, leading to high VWC</li>
+<li>Dormant/Stressed Plants<span class="citation" data-cites="vaia2022transpiration"><sup><a href="#ref-vaia2022transpiration" role="doc-biblioref">7</a></sup></span> : Plants that are dormant (during certain seasons) or stressed (due to disease or poor health) may have reduced transpiration rates. This can lead to soil retaining more water, increasing VWC.</li>
 </ol></li>
 <li>What measures can we take to keep this value high? :
 <ul>
@@ -232,9 +250,32 @@ ul.task-list li input[type="checkbox"] {
 <p>Features that effect annual temperature prediction the most are ratios of summer seasonal features rather than the value of the original feature itself. Meaning that high percipitation may not be important bur rather the ratio of percipitation to water in the soil is important. Based on these findings, we can take measures to prevent the temperature from rising, although further analysis on RCP4.5 scenarios must be done to have a more exact hypothesis for relationships.</p>
 
 
+
 </section>
 
-</main> <!-- /main -->
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body" data-line-spacing="2" role="list">
+<div id="ref-nrcs2022conservation" class="csl-entry" role="listitem">
+<div class="csl-left-margin">1. </div><div class="csl-right-inline">U. S. Department of Agriculture, N. R. C. S. <a href="https://www.nrcs.usda.gov/sites/default/files/2022-10/nrcs142p2_051590.pdf">Conservation practice standard: Critical area planting</a>. <em>NRCS</em> (2022).</div>
+</div>
+<div id="ref-okstate2022soil" class="csl-entry" role="listitem">
+<div class="csl-left-margin">2. </div><div class="csl-right-inline">Extension, O. S. U. <a href="https://extension.okstate.edu/fact-sheets/understanding-soil-water-content-and-thresholds-for-irrigation-management.html#:~:text=The%20volumetric%20water%20content%20is,water%20per%20foot%20of%20soil.">Understanding soil water content and thresholds for irrigation management</a>. <em>Oklahoma State University Extension</em> (2022).</div>
+</div>
+<div id="ref-usu2022soil" class="csl-entry" role="listitem">
+<div class="csl-left-margin">3. </div><div class="csl-right-inline">Extension, U. S. U. <a href="https://extension.usu.edu/laep/research/commercially-available-products-to-incease-soil-water-holding#:~:text=Adding%20just%201%25%20organic%20matter,sandy%20or%20coarse%2Dtextured%20soils.">Commercially available products to increase soil water holding capacity</a>. <em>Utah State University Extension</em> (2022).</div>
+</div>
+<div id="ref-sare2022cover" class="csl-entry" role="listitem">
+<div class="csl-left-margin">4. </div><div class="csl-right-inline">Research, S. A. &amp; (SARE), E. <a href="https://www.sare.org/publications/smart-water-use-on-your-farm-or-ranch/soil-management/cover-crops/">Cover crops</a>. <em>Smart Water Use on Your Farm or Ranch</em> (2022).</div>
+</div>
+<div id="ref-ucdavis2022tillage" class="csl-entry" role="listitem">
+<div class="csl-left-margin">5. </div><div class="csl-right-inline">Research, S. A. &amp; Education Program, U. D. <a href="https://sarep.ucdavis.edu/sustainable-ag/conservation-tillage#:~:text=Tillage%20reduction%20can%20enhance%20soil,and%20increased%20organic%20matter%20content.">Conservation tillage</a>. <em>UC Davis Sustainable Agriculture Research and Education Program</em> (2022).</div>
+</div>
+<div id="ref-usace2022evaporation" class="csl-entry" role="listitem">
+<div class="csl-left-margin">6. </div><div class="csl-right-inline">U. S. Army Corps of Engineers, H. E. C. <a href="https://www.hec.usace.army.mil/confluence/hmsdocs/hmstrm/evaporation-and-transpiration/evaporation-and-transpiration-basic-concepts">Evaporation and transpiration: Basic concepts</a>. <em>U.S. Army Corps of Engineers</em> (2022).</div>
+</div>
+<div id="ref-vaia2022transpiration" class="csl-entry" role="listitem">
+<div class="csl-left-margin">7. </div><div class="csl-right-inline">Vaia. <a href="https://www.vaia.com/en-us/explanations/combined-science/synergy/factors-affecting-transpiration/#:~:text=30%20degree%20Celsius.-,Fig.,thermometer">Factors affecting transpiration</a>. <em>Vaia</em> (2022).</div>
+</div>
+</div></section></div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
 window.document.addEventListener("DOMContentLoaded", function (event) {
   const toggleBodyColorMode = (bsSheetEl) => {

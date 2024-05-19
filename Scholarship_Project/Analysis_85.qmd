@@ -118,11 +118,11 @@ df_orig = filtered_df
 ```
 
 # RCP = 8.5
-For RCP 8.5, we will be comparing Scenario 60(High) vs Scenario 58(Low) to see if there is a difference in features that affect Annual Temperature according to the RCP values.
+For RCP 8.5, we will be comparing Scenario 60(Low) vs Scenario 58(High) to see if there is a difference in features that affect Annual Temperature according to the RCP values.
 
 ## t-SNE (1st Trial)
 
-**What is t-SNE?**
+**What is t-SNE?**<br>
 t-SNE (t-distributed Stochastic Neighbor Embedding) is a dimensionality reduction technique particularly effective in visualizing high-dimensional data. It works by converting similarities between data points into joint probabilities and minimizing the Kullback-Leibler divergence between these joint probabilities in the high-dimensional and low-dimensional space. This results in a map where similar objects are modeled by nearby points and dissimilar objects by distant points. When interpreting a t-SNE plot, clusters indicate groups of similar data points, suggesting patterns or structures within the data. However, the distances between clusters and the exact positioning can sometimes be arbitrary, so the focus should be on the local neighborhood structures rather than global distances.
 
 **Analysis Methodology**<br>

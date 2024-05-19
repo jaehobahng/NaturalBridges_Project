@@ -440,8 +440,7 @@ In the analysis of Pearson correlation for different RCP (Representative Concent
 
 2. RCP 8.5 Scenario:
 
-    - Temperature-Related Variables: There was a noticeable increase in the number of temperature-related variables such as Tmin (minimum temperature) and Tmax (maximum temperature).
-    - Decrease in VWC and SWA Features: The number of VWC and SWA features significantly decreased, and their places in the ranking were taken over by temperature-related variables.
+    - Correlation decrease in VWC and SWA Features: The number of VWC and SWA features significantly decreased, and their values decreased significantly compared to RCP4.5 correlations. Furthermore, there is a visual drop between PET_Spring and Evap_Spring whereas there was a smooth transition for RCP4.5.
 
 #### Implications:
 1. RCP 4.5: This scenario suggests room for human actions to influence annual temperature.
@@ -555,10 +554,10 @@ fig.show()
 
 To identify the most significant differences between two scenarios, I employed another method: calculating the RMSE (Root Mean Square Error) for each column. Given that both scenarios have the same number of data points, this approach provided an effective way to quantify the differences. Before performing the RMSE calculations, I standardized the data points to ensure consistency.
 
-When analyzing differences using RMSE, precipitation-related features stood out as the most variable between the two scenarios. Interestingly, it wasn’t always the scenario with the highest precipitation that had the lower temperature. The most surprising difference was in PPT_Fall, identified as the most significant discrepancy. Scenario 37 had higher fall precipitation than Scenario 40. However, Scenario 40 exhibited higher annual precipitation, greater summer precipitation, and even more evaporation during the summer.
+When analyzing differences using RMSE, precipitation-related features stood out as the most variable between the two RCP scenarios. Interestingly, it wasn’t always the scenario with the highest precipitation that had the lower temperature. A surprising difference was in PPT_Summer where RCP8.5 had higher average percipitation than RCP4.5. T
 
-**What does this mean?**
-Seasonality of features could affect the annual temperature more than the annual featuers itself. Although the current analysis is on scenarios, a future research on analyzing seasons could be a plausible approach to predict annual temperature.
+**What does this mean?**<br>
+This may be a sign that percipitation itself may not be an important factor when predicting the temperature, but may be used as a ratio to some other feature to predict.
 
 ```{python}
 #| code-summary: RMSE
@@ -626,3 +625,13 @@ for i, feature in enumerate(rmse_sort.keys()[:5]):
 
 # Conclusion
 
+**Scatterplot**<br>
+With the scatterplot, we were able to visually identify features that have strong positive and negative correlations with annual temperature. A few variables that we found were VWC_Summer_whole, WetSoilDays_Spring_whole, SWA_Fall_whole, and Bare
+
+
+**Correlation Heatmap**<br>
+Firstly, the correlation heatmaps give us a direct insight on which features directly correlate with annual temperature. Extreme Short Term Stress, Frost Days, PET, VWC were overlapping features for both RCP scenarios. However, the difference was that the RCP8.5 correlations had a sudden drop for the VWC variables allowing us to hypothesize that human actions will affect the temperature less when done in a scenario where more CO2 emission is happenning.
+
+
+**RMSE**<br>
+The RMSE gives us a different perspective to features that correlate with annual temperature. For example, by calculating RMSE for each column against each other for different RCP scenarios, we know that percipitation is very different for the two scenarios. However, the higher temperature scenario also has higher percipitation which is contradicting to common logic. This may be a sign that percipitation itself may not be an important factor when predicting the temperature, but may be used as a ratio to some other feature to predict.

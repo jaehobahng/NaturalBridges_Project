@@ -32,22 +32,21 @@ Lets talk about some future actions we can take to lower the temperature based o
 
 *We will talk about actions for features we can work on. For example, percipitation related features will not be discussed regardless of their ranking.*
 
-1. Soil Water Availability / Volumetric Water Content (High value = Low Temperature)
+1. Soil Water Availability[@nrcs2022conservation] / Volumetric Water Content[@okstate2022soil] (High value = Low Temperature)
  - Why does this happen? : 
  
     Achieving high soil water availability (SWA) with low volumetric water content (VWC) involves enhancing soil structure, managing compaction, optimizing irrigation, and using appropriate soil amendments. Adding organic matter and using cover crops improve soil structure and porosity, while minimal tillage and subsoiling reduce compaction. Efficient irrigation methods like drip irrigation and the use of soil conditioners such as gypsum help make water readily available to plants. Mulching and selecting deep-rooted or drought-tolerant plants also contribute to maintaining optimal soil moisture without excessive VWC.
 
  - What measures can we take to keep this value high? : 
 
-    - Incorporate Organic Matter: Regularly add compost, manure, or green manures to improve soil structure and porosity.
-    - Use Cover Crops: Plant cover crops to enhance organic content, improve soil structure, and reduce erosion.
-    - Practice Minimal Tillage: Avoid excessive tillage to prevent soil compaction and maintain good soil structure.
-    - Subsoiling: Use subsoiling or deep ripping to break up compacted layers and enhance water infiltration and root penetration.
+    - Incorporate Organic Matter: Regularly add compost, manure, or green manures to improve soil structure and porosity.[@usu2022soil]
+    - Use Cover Crops: Plant cover crops to enhance organic content, improve soil structure, and reduce erosion.[@sare2022cover]
+    - Practice Minimal Tillage: Avoid excessive tillage to prevent soil compaction and maintain good soil structure.[@ucdavis2022tillage]
 
 2. Transpiration / Volumetric Water Content (High value = Low Temperature)
  - Why does this happen? : 
-    1. Low Plant Density : Areas with sparse vegetation or low plant density will have lower overall transpiration rates. With fewer plants to uptake and transpire water, the soil can retain more moisture, leading to high VWC
-    2. Dormant/Stressed Plants : Plants that are dormant (during certain seasons) or stressed (due to disease or poor health) may have reduced transpiration rates. This can lead to soil retaining more water, increasing VWC.
+    1. Low Plant Density[@usace2022evaporation] : Areas with sparse vegetation or low plant density will have lower overall transpiration rates. With fewer plants to uptake and transpire water, the soil can retain more moisture, leading to high VWC
+    2. Dormant/Stressed Plants[@vaia2022transpiration] : Plants that are dormant (during certain seasons) or stressed (due to disease or poor health) may have reduced transpiration rates. This can lead to soil retaining more water, increasing VWC.
 
  - What measures can we take to keep this value high? : 
      - Optimize Plant Density and Selection : Densely planting more wil increase overall transpiration rates and balance soil moisture levels. In addition, choosing plants suited to the local climate that have higher transpiration rates are crucial.
