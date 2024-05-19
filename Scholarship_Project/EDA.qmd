@@ -1,5 +1,5 @@
 ---
-title: Dataset EDA
+title: Exploratory Data Analysis
 author: JaeHo Bahng
 date: 5/19/2024
 format:
@@ -11,6 +11,15 @@ fig-cap-location: bottom
 jupyter: python3
 ---
 ---------------------------------------------------------------
+
+# Manipulate Dataset
+
+In order to perform explanatory data analysis, we will preprocess the data into 2 different formats.
+
+1. Average of all scenarios : In order to plot a temperature average of locations onto a map, scenarios must be merged into one data point.
+
+2. Leave all scenarios : for a more detailed analysis, all scenarios will be kept separately
+
 ```{python}
 #| code-summary: Import module / Set options and theme
 #| vscode: {languageId: python}
@@ -20,22 +29,16 @@ import seaborn as sns
 import numpy as np
 import xml.etree.ElementTree as ET
 import plotly.express as px
-import plotly.graph_objects as go
 from scipy.stats import ttest_rel
 from statsmodels.stats.weightstats import ttest_ind
-import numpy as np
 import pingouin as pg
 from scipy.stats import zscore
 import plotly.graph_objects as go
-import pandas as pd
 from plotly.subplots import make_subplots
 import warnings
-import numpy as np
-import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
-import matplotlib.pyplot as plt
 
 
 warnings.filterwarnings("ignore")
@@ -52,7 +55,7 @@ df = pd.read_csv('../data/cleaned_df.csv')
 df['Location_ID'] = df.groupby(['long', 'lat']).ngroup() + 1
 ```
 
-# Manipulate Dataset
+
 
 ## Average Scenarios
 
@@ -64,7 +67,6 @@ The Average Scenarios dataset averages all the numerical columns of the scenario
 
 group_list = ['Park', 'long', 'lat', 'veg', 'year', 'TimePeriod', 'RCP','treecanopy', 'Ann_Herb', 'Bare', 'Herb', 'Litter', 'Shrub', 'El', 'Sa','Cl', 'RF', 'Slope', 'E', 'S']
 veg_location = df.drop(labels='scenario',axis=1).groupby(group_list).mean().reset_index()
-# veg_location['T_Annual'] = (veg_location['T_Annual'] - veg_location['T_Annual'].min()) / (veg_location['T_Annual'].max() - veg_location['T_Annual'].min())
 
 # Convert to numeric, coercing errors to NaN
 numeric_series = pd.to_numeric(veg_location['RCP'], errors='coerce')
@@ -91,12 +93,10 @@ df_con.head(5)
 
 ```{python}
 #| vscode: {languageId: python}
-# Convert to numeric, coercing errors to NaN
 numeric_series = pd.to_numeric(df['RCP'], errors='coerce')
 
 numeric_series
 
-# Fill NaNs with original non-numeric values
 df['RCP'] = numeric_series.fillna(df['RCP'])
 
 four = df[df['RCP'].isin([4.5])]
@@ -118,16 +118,16 @@ df_orig.head(5)
 
 **Basic Statistics**
 
- - 79 years of prediction (2021~2099)<br>
- - 40 scenarios (sc22~sc61)<br>
- - 2 RCP scenarios(4.5, 8.5)<br>
- - 113 locations<br>
+ - 79 years of prediction (2021~2099)
+ - 40 scenarios (sc22~sc61)
+ - 2 RCP scenarios(4.5, 8.5)
+ - 113 locations
 
 **Explanation**
 
- - The data is collected over 113 locations within the Natural Bridge National Monument. (Number of Unique latitude, longitude combinations)<br>
- - This dataset is composed of 41 years of historical data and 79 years worth of predictions. Since there can be only one scenario for past data, all historical data is labeled as 'sc1' or scenario one<br>
- - From the predicted years (2021 to 2099), There are two RCP scenarios which changes only the RCP variable and 40 scenarios which simulate 86 other variables.<br>
+ - The data is collected over 113 locations within the Natural Bridge National Monument. (Number of Unique latitude, longitude combinations)
+ - This dataset is composed of 41 years of historical data and 79 years worth of predictions. Since there can be only one scenario for past data, all historical data is labeled as 'sc1' or scenario one
+ - From the predicted years (2021 to 2099), There are two RCP scenarios which changes only the RCP variable and 40 scenarios which simulate 86 other variables.
 
 
 Based on each combination of scenarios, a prediction is made for each location point regarding various columns of the dataset including annual and seasonal percipitation, seasonal dry soil days, seasonal evaporation, seasonal extreme short term dry stress, soil water availability to output a **final prediction for Annual and seasonal temperatures.**
@@ -145,7 +145,7 @@ source : Representative Concentration Pathway. (2024, May 2). In Wikipedia. http
 ## Location
 **Where is this data located and how does it look like?**
 
-The data points were sampled at the Natural Bridge National Monument in Utah. And for a better idea of The plots below show two different location aspects of the dataset. The first plot is the average annual temperature for each location point in the year 2099. Since the temperature for predictions increase over time, the last year for the dataset was chosen for a more dramatic comparison
+The data points were sampled at the Natural Bridge National Monument in Utah. And for a better idea of how temperatures and vegetations are distributed, the plots below show two different location aspects of the dataset. The first plot is the average annual temperature for each location point in the year 2099. Since the temperature for predictions increase over time, the last year for the dataset was chosen for a more dramatic comparison
 
 The second plot is a scatter plot of the locations of vegetations. By comparing the two graphs, we can tell that there isn't much correlation with vegetation and annual temperature but rather a correlation with the location(latitude, longitude) and temperature. We will get to this in the following visualizations. 
 
@@ -177,12 +177,10 @@ map = df_con[df_con['year']==2099].groupby(['long','lat','veg']).size().reset_in
 
 filtered_df = map
 
-# Create the scatter mapbox
 fig = px.scatter_mapbox(map, lat="lat", lon="long", color="veg",
                         color_continuous_scale=px.colors.cyclical.IceFire, size_max=8, zoom=11,
                         mapbox_style="open-street-map")
 
-# Update the layout with the new legend title and position
 fig.update_layout(
     title={
         'text': "<b>Vegetation Location</b>",
@@ -192,17 +190,17 @@ fig.update_layout(
         'yanchor': 'top'
     },
     coloraxis_colorbar={
-        'title': 'Vegetation Level'  # Change this to your desired legend title
+        'title': 'Vegetation Level' 
     },
     legend={
-        'x': 1,  # Position the legend to the right
-        'y': 0.8,  # Center the legend vertically
-        'xanchor': 'left',  # Anchor the legend's x position to the left side
-        'yanchor': 'middle'  # Anchor the legend's y position to the middle
+        'x': 1,  
+        'y': 0.8,  
+        'xanchor': 'left', 
+        'yanchor': 'middle'
     },
     margin={"r": 0, "t": 40, "l": 0, "b": 0}
 )
-fig.update_traces(marker=dict(size=10))  # Set the desired fixed marker size
+fig.update_traces(marker=dict(size=10))
 
 # Show the figure
 fig.show()
@@ -218,11 +216,8 @@ We can see that the predictions portray an increase in temperature but a fluctua
 #| code-summary: Temperature / Percipitation Predictions Overview
 #| vscode: {languageId: python}
 
-# Assuming 'veg_location' is your DataFrame
-# Filter the DataFrame for 'RCP' values 'historical' and 4.5
 filtered_data = df_con.groupby(['year'])['T_Annual'].mean().reset_index()
 
-# Create the line plot
 fig = px.line(
     data_frame=filtered_data,
     x='year',
@@ -232,7 +227,6 @@ fig = px.line(
     line_shape='spline'
 )
 
-# Add a vertical line at year 2021
 fig.add_shape(
     dict(
         type='line',
@@ -250,8 +244,8 @@ fig.add_shape(
 
 fig.add_annotation(
     dict(
-        x=2021,  # Position the text to the right of the line
-        y=filtered_data['T_Annual'].max(),  # Position the text at the middle of the y-axis
+        x=2021,  
+        y=filtered_data['T_Annual'].max(), 
         xref="x",
         yref="y",
         text="Prediction",
@@ -284,7 +278,6 @@ fig = px.line(
     line_shape='spline'
 )
 
-# Add a vertical line at year 2021
 fig.add_shape(
     dict(
         type='line',
@@ -302,8 +295,8 @@ fig.add_shape(
 
 fig.add_annotation(
     dict(
-        x=2021,  # Position the text to the right of the line
-        y=filtered_data['PPT_Annual'].max(),  # Position the text at the middle of the y-axis
+        x=2021, 
+        y=filtered_data['PPT_Annual'].max(), 
         xref="x",
         yref="y",
         text="Prediction",
@@ -318,7 +311,7 @@ fig.add_annotation(
 )
 
 fig.update_layout(title={'x':0.5})
-# Show the plot
+
 fig.show()
 ```
 
@@ -339,23 +332,20 @@ Categorical Variables :
 #| code-summary: Temperature RCP comparison
 #| vscode: {languageId: python}
 
-# Assuming 'veg_location' is your DataFrame
-# Filter the DataFrame for 'RCP' values 'historical' and 4.5
+
 filtered_data = df_con.groupby(['year','RCP'])['T_Annual'].mean().reset_index()
 
-# Create the line plot
 fig = px.line(
     data_frame=filtered_data,
     x='year',
     y='T_Annual',
-    color='RCP',  # This will create lines for each unique value in 'veg' and color them differently
+    color='RCP', 
     title='<b>Annual Temperature by RCP Type</b>',
     labels={'T_Annual': 'Annual Temperature'},
     line_shape='spline'
 )
 fig.update_layout(title={'x':0.5})
 
-# Add a vertical line at year 2021
 fig.add_shape(
     dict(
         type='line',
@@ -373,8 +363,8 @@ fig.add_shape(
 
 fig.add_annotation(
     dict(
-        x=2021,  # Position the text to the right of the line
-        y=filtered_data['T_Annual'].max(),  # Position the text at the middle of the y-axis
+        x=2021,  
+        y=filtered_data['T_Annual'].max(), 
         xref="x",
         yref="y",
         text="Prediction",
@@ -388,7 +378,6 @@ fig.add_annotation(
     )
 )
 
-# Show the plot
 fig.show()
 ```
 
@@ -402,12 +391,11 @@ Since RCP deals with CO2 emission and the 8.5 scenario has a higher emission pre
 # Filter the DataFrame for 'RCP' values 'historical' and 4.5
 filtered_data = df_con[df_con['RCP'].isin(['historical', 4.5])].groupby(['year','veg'])['T_Annual'].mean().reset_index()
 
-# Create the line plot
 fig = px.line(
     data_frame=filtered_data,
     x='year',
     y='T_Annual',
-    color='veg',  # This will create lines for each unique value in 'veg' and color them differently
+    color='veg',  
     title='<b>Annual Temperature by Vegetation Type</b>',
     labels={'T_Annual': 'Annual Temperature'}
 )
@@ -432,8 +420,8 @@ fig.add_shape(
 
 fig.add_annotation(
     dict(
-        x=2021,  # Position the text to the right of the line
-        y=filtered_data['T_Annual'].max(),  # Position the text at the middle of the y-axis
+        x=2021,  
+        y=filtered_data['T_Annual'].max(), 
         xref="x",
         yref="y",
         text="Prediction",
@@ -447,7 +435,7 @@ fig.add_annotation(
     )
 )
 
-# Show the plot
+
 fig.show()
 ```
 
@@ -457,22 +445,16 @@ The vegetations seem to follow exactly the same pattern of prediciton with a fix
 #| code-summary: Temperature comparison (scenario)
 #| vscode: {languageId: python}
 
-# Assuming df_orig is your DataFrame and it has been filtered to exclude 'Hist' from 'TimePeriod'
 df_filtered = df_orig[df_orig['TimePeriod'] != 'Hist']
 
-# Calculate the median of 'T_Annual' for each 'scenario'
 medians = df_filtered.groupby('scenario')['T_Annual'].median().reset_index()
 
-# Sort the median values
 medians = medians.sort_values('T_Annual')
 
-# Merge sorted median DataFrame back to the filtered DataFrame
 df_sorted = pd.merge(medians['scenario'], df_filtered, on='scenario', how='left')
 
-# Creating a boxplot with Plotly Express using the sorted DataFrame
 fig = px.box(df_sorted, x='scenario', y='T_Annual', color='RCP')
 
-# Rotating x-axis labels
 fig.update_layout(
     xaxis_tickangle=-90,
     title={
@@ -481,10 +463,10 @@ fig.update_layout(
         'xanchor': 'center'
     }
 )
-# Displaying the plot
+
 fig.show()
 ```
-Since we already know that RCP plays a big role in how the algorithm predicts the temperature, We will **divide the scenarios into 4.5 scenarios and 8.5 scenarios** to see if there is a significant difference. By examining the plot we now know that RCP 4.5 correspons to scenario 22~41 and RCP 8.5 correspons to scenario 42~61. There are cases where 4.5 scenarios had higher temperatures than 8.5 scenarios, but since RCP acts as the first drill down layer of the dataset, we can use the scenario as the second drilldown of the dataset.
+Since we already know that RCP plays a big role in how the algorithm predicts the temperature, We will **group the dataset into RCP4.5 scenarios and RCP8.5 scenarios** to see if there is a significant difference. By examining the plot we now know that RCP 4.5 correspons to scenario 22~41 and RCP 8.5 correspons to scenario 42~61. There are cases where 4.5 scenarios had higher temperatures than 8.5 scenarios, but since RCP acts as the first drill down layer of the dataset, we can use the scenario column as the second drilldown of the dataset.
 
 
 # Statistical Significance
@@ -511,11 +493,6 @@ result = pg.ttest(data_before,
                   data_after,
                   correction=True)
  
-
-# # Print the result
-# print("t value : ",result['T'][0])
-# print("95% Confidence Interval : ", result['CI95%'][0])
-# print("p-value : ", result['p-val'][0])
 ```
 
 **T-test for RCP 4.5 and 8.8**
@@ -540,11 +517,6 @@ result = pg.ttest(data_before,
                   data_after,
                   correction=True)
  
-# # Print the result
-# # Print the result
-# print("t value : ",result['T'][0])
-# print("95% Confidence Interval : ", result['CI95%'][0])
-# print("p-value : ", result['p-val'][0])
 ```
 
 **T-test for Scenario 40 vs 37**
@@ -568,10 +540,7 @@ result = pg.ttest(data_before,
                   data_after,
                   correction=True)
  
-# # Print the result
-# print("t value : ",result['T'][0])
-# print("95% Confidence Interval : ", result['CI95%'][0])
-# print("p-value : ", result['p-val'][0])
+
 ```
 
 **T-test for Scenario 60 vs 58**
@@ -588,5 +557,5 @@ For our dataset analysis, we will be **comparing the maximum and minimum scenari
 
 
 # Next Steps!
-Now that we've proved that the differenc between RCP scenarios, and the highest and lowest scenario for each RCP are all statistically significant, lets dive deeper into the dataset to construct visualizations to hypothesize features that have correlations to the predicted temperature!
+Now that we've proved that the difference between RCP scenarios, and the highest and lowest scenario for each RCP group are all statistically significant, lets dive deeper into the dataset to construct visualizations to hypothesize features that have correlations to the predicted temperature!
 

@@ -1,5 +1,5 @@
 ---
-title: Dataset Analysis
+title: Dataset Analysis Overview
 author: JaeHo Bahng
 date: 5/19/2024
 format:
@@ -9,7 +9,7 @@ format:
 fig-cap-location: bottom
 jupyter: python3
 ---
-
+---------------------------------------------------------------
 # Introduction
 
 Before we dive into scenarios, lets conduct a simple comparison on the overall trend of RCP 4.5 and 8.5. What variables influence annual temperature the most when grouped into two RCP scenarios as a whole?
@@ -22,6 +22,8 @@ We will be using **scatterplots and pearson correlation and RMSE** to find simil
 #| code-summary: Import module / Set options and theme
 import pandas as pd
 import matplotlib.pyplot as plt
+import pandas as pd
+import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 import xml.etree.ElementTree as ET
@@ -29,30 +31,14 @@ import plotly.express as px
 import plotly.graph_objects as go
 from scipy.stats import ttest_rel
 from statsmodels.stats.weightstats import ttest_ind
-import numpy as np
 import pingouin as pg
 from scipy.stats import zscore
-import plotly.graph_objects as go
-import pandas as pd
 from plotly.subplots import make_subplots
 import warnings
-import numpy as np
-import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
-import matplotlib.pyplot as plt
-import plotly.graph_objects as go
-import numpy as np
-import pandas as pd
-from sklearn.decomposition import PCA
-from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler
-import plotly.express as px
 from sklearn.manifold import TSNE
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
 
 warnings.filterwarnings("ignore")
 
@@ -71,8 +57,6 @@ df['Location_ID'] = df.groupby(['long', 'lat']).ngroup() + 1
 
 group_list = ['Park', 'long', 'lat', 'veg', 'year', 'TimePeriod', 'RCP','treecanopy', 'Ann_Herb', 'Bare', 'Herb', 'Litter', 'Shrub', 'El', 'Sa','Cl', 'RF', 'Slope', 'E', 'S']
 veg_location = df.drop(labels='scenario',axis=1).groupby(group_list).mean().reset_index()
-# veg_location['T_Annual'] = (veg_location['T_Annual'] - veg_location['T_Annual'].min()) / (veg_location['T_Annual'].max() - veg_location['T_Annual'].min())
-
 
 # Average Scenario Dataset
 # Convert to numeric, coercing errors to NaN
@@ -174,7 +158,7 @@ for i, col in enumerate(color_columns):
                     "RCP: " + str(rcp) + "<br>"
                     "Value: %{marker.color}<br>"
                     "<extra></extra>"
-                  )  # This hides the secondary box with trace info  # Only the first trace is visible initially
+                  ) 
             ),
             row=1, col=j+1
         )
@@ -188,7 +172,7 @@ fig.update_layout(
         'xanchor': 'center'
     },
     # title_font=dict(size=20),
-    showlegend=False  # Hide legend since we are using colorbars
+    showlegend=False
 )
 
 # Adding dropdown filter to change visible trace
@@ -230,7 +214,6 @@ fig.update_xaxes(title_text="Annual Precipitation", row=1, col=2)
 for annotation in fig['layout']['annotations']:
     annotation['font'] = {'size': 12, 'color': 'black'}
 
-# Show the figure
 fig.show()
 ```
 
@@ -252,17 +235,17 @@ feature = 'VWC_Summer_whole'
 fig = px.scatter(df_con[df_con['year'].isin(range(2060,2099))], x="PPT_Annual", y="T_Annual",
                  color=feature, facet_col="RCP",     
                  labels={
-        feature: 'Scale'  # Replace with your desired colorbar title
+        feature: 'Scale'  
     })
 fig.update_layout(
     title={
         'text': f'<b>Annual Precipitation/Temperature ({feature})</b>',
         # 'y':0.95,  # This adjusts the position of the title (vertically)
         'x':0.5,   # Centers the title horizontally
-        'xanchor': 'center',  # Ensures the title is centered at the specified x position
-        # 'yanchor': 'top'  # Ensures the title is positioned based on the top of the text
+        'xanchor': 'center',  
+        # 'yanchor': 'top'
     },
-    title_font=dict(size=20)  # Custom font settings
+    title_font=dict(size=20)  
 )
 fig.show()
 
@@ -271,17 +254,17 @@ feature = 'WetSoilDays_Spring_whole'
 fig = px.scatter(df_con[df_con['year'].isin(range(2060,2099))], x="PPT_Annual", y="T_Annual",
                  color=feature, facet_col="RCP",     
                  labels={
-        feature: 'Scale'  # Replace with your desired colorbar title
+        feature: 'Scale' 
     })
 fig.update_layout(
     title={
         'text': f'<b>Annual Precipitation/Temperature ({feature})</b>',
         # 'y':0.95,  # This adjusts the position of the title (vertically)
         'x':0.5,   # Centers the title horizontally
-        'xanchor': 'center',  # Ensures the title is centered at the specified x position
-        # 'yanchor': 'top'  # Ensures the title is positioned based on the top of the text
+        'xanchor': 'center',  
+        # 'yanchor': 'top' 
     },
-    title_font=dict(size=20)  # Custom font settings
+    title_font=dict(size=20)
 )
 
 fig.show()
@@ -290,17 +273,17 @@ feature = 'SWA_Fall_whole'
 fig = px.scatter(df_con[df_con['year'].isin(range(2060,2099))], x="PPT_Annual", y="T_Annual",
                  color=feature, facet_col="RCP",     
                  labels={
-        feature: 'Scale'  # Replace with your desired colorbar title
+        feature: 'Scale' 
     })
 fig.update_layout(
     title={
         'text': f'<b>Annual Precipitation/Temperature ({feature})</b>',
         # 'y':0.95,  # This adjusts the position of the title (vertically)
         'x':0.5,   # Centers the title horizontally
-        'xanchor': 'center',  # Ensures the title is centered at the specified x position
-        # 'yanchor': 'top'  # Ensures the title is positioned based on the top of the text
+        'xanchor': 'center',  
+        # 'yanchor': 'top' 
     },
-    title_font=dict(size=20)  # Custom font settings
+    title_font=dict(size=20)
 )
 
 fig.show()
@@ -308,8 +291,11 @@ fig.show()
 
 ## Pearson Correlation
 
-**What is Pearson Correlation?**
+**What is Pearson Correlation?**<br>
 Pearson correlation is a measure of the linear relationship between two continuous variables. It quantifies the degree to which a change in one variable predicts a change in another variable, with values ranging from -1 to +1. A value of +1 indicates a perfect positive linear relationship, where an increase in one variable corresponds to a proportional increase in the other. A value of -1 indicates a perfect negative linear relationship, where an increase in one variable corresponds to a proportional decrease in the other. A value of 0 indicates that there is no linear relationship between the variables. 
+
+### Methodology
+We will be **calculating correlations on predicted years only** and not the observed data marked as 'hist' because as we saw in the EDA section, the predictions rise after predicitons and have a rather fluctuating pattern in the past. Since our goal is to find features that correlate with annual temperature, removing history data would create more correlation within the dataset.
 
 ### RCP4.5
 
@@ -335,52 +321,46 @@ corr_matrix = df_orig[(df_orig['TimePeriod']!='Hist') & (df_orig['RCP']==4.5)].i
 
 # Create an interactive heatmap of the correlation matrix
 fig = px.imshow(corr_matrix,
-                # text_auto=True,  # Automatically add text in each cell
+                # text_auto=True,
                 labels=dict(color="Correlation"),
                 x=corr_matrix.columns,
                 y=corr_matrix.columns,
                 color_continuous_scale='RdBu_r'
-  )  # Red-Blue color map, reversed
+  )
 
 fig.update_layout(
-    width=800,  # Width of the figure in pixels
-    height=900,  # Height of the figure in pixels
-    margin=dict(l=10, r=1, t=50, b=10)  # Reducing margins around the plot
+    width=800, 
+    height=900,  
+    margin=dict(l=10, r=1, t=50, b=10)  
 )
 
-# Adjusting color bar position
-# fig.update_layout(coloraxis_colorbar=dict(
-#     x=0.8  # Adjusts the horizontal position of the color bar
-# ))
+
 fig.update_layout(title_text='<b>Future Correlation Heatmap : RCP 4.5</b>',  # Bold text using HTML
                   title_x=0.5)  # Centers the title by setting the x position to 0.5
 
-fig.update_xaxes(tickfont=dict(size=10))  # Sets the font size of x-axis labels
-fig.update_yaxes(tickfont=dict(size=10))  # Sets the font size of y-axis labels
-# fig.update_xaxes(side="bottom")
+fig.update_xaxes(tickfont=dict(size=10))  
+fig.update_yaxes(tickfont=dict(size=10))
+
 fig.show()
 ```
 
 ```{python}
 #| code-summary: Correlation Feature Importance
 
-# Sort the features by the absolute value of the loading for PCA1
 sorted_loadings = corr_matrix['T_Annual'].abs().sort_values(ascending=False)
 
-# Get the top 10 most influential features
 top_features = sorted_loadings.head(20).index
 
-# Get the actual loadings for these top 10 features
 top_loadings = round(corr_matrix['T_Annual'].loc[top_features,],4)[1:]
 
 # Create a color list based on the sign of the loadings
 colors = ['blue' if val > 0 else 'red' for val in top_loadings]
 
-# Create a bar chart
+
 fig = go.Figure(data=[go.Bar(
     x=top_loadings.index,
     y=top_loadings.abs(),
-    text=top_loadings.values,  # Show the actual values as text
+    text=top_loadings.values,
     textposition='inside',
     marker_color=colors,
     showlegend=False
@@ -407,8 +387,8 @@ fig.update_layout(
     yaxis_title='Absolute PCA1 Loadings',
     yaxis=dict(tickformat=".2f"),
     xaxis=dict(
-        tickangle=45,  # Rotate x ticks
-        tickfont=dict(size=10)  # Make the font smaller
+        tickangle=45, 
+        tickfont=dict(size=10) 
     ),
     template='plotly_white',
     legend=dict(
@@ -460,7 +440,7 @@ corr_matrix = df_orig[(df_orig['TimePeriod']!='Hist') & (df_orig['RCP']==8.5)].i
 
 # Create an interactive heatmap of the correlation matrix
 fig = px.imshow(corr_matrix,
-                # text_auto=True,  # Automatically add text in each cell
+                # text_auto=True, 
                 labels=dict(color="Correlation"),
                 x=corr_matrix.columns,
                 y=corr_matrix.columns,
@@ -468,44 +448,37 @@ fig = px.imshow(corr_matrix,
   )  # Red-Blue color map, reversed
 
 fig.update_layout(
-    width=800,  # Width of the figure in pixels
-    height=900,  # Height of the figure in pixels
-    margin=dict(l=10, r=1, t=50, b=10)  # Reducing margins around the plot
+    width=800, 
+    height=900, 
+    margin=dict(l=10, r=1, t=50, b=10)  
 )
 
-# Adjusting color bar position
-# fig.update_layout(coloraxis_colorbar=dict(
-#     x=0.8  # Adjusts the horizontal position of the color bar
-# ))
-fig.update_layout(title_text='<b>Future Correlation Heatmap : RCP 8.5</b>',  # Bold text using HTML
-                  title_x=0.5)  # Centers the title by setting the x position to 0.5
 
-fig.update_xaxes(tickfont=dict(size=10))  # Sets the font size of x-axis labels
-fig.update_yaxes(tickfont=dict(size=10))  # Sets the font size of y-axis labels
-# fig.update_xaxes(side="bottom")
+fig.update_layout(title_text='<b>Future Correlation Heatmap : RCP 8.5</b>',
+                  title_x=0.5)  
+
+fig.update_xaxes(tickfont=dict(size=10))
+fig.update_yaxes(tickfont=dict(size=10)) 
+
 fig.show()
 ```
 
 ```{python}
 #| code-summary: Correlation Feature Importance
 
-# Sort the features by the absolute value of the loading for PCA1
 sorted_loadings = corr_matrix['T_Annual'].abs().sort_values(ascending=False)
 
-# Get the top 10 most influential features
 top_features = sorted_loadings.head(20).index
 
-# Get the actual loadings for these top 10 features
 top_loadings = round(corr_matrix['T_Annual'].loc[top_features,],4)[1:]
 
-# Create a color list based on the sign of the loadings
 colors = ['blue' if val > 0 else 'red' for val in top_loadings]
 
 # Create a bar chart
 fig = go.Figure(data=[go.Bar(
     x=top_loadings.index,
     y=top_loadings.abs(),
-    text=top_loadings.values,  # Show the actual values as text
+    text=top_loadings.values,
     textposition='inside',
     marker_color=colors,
     showlegend=False
@@ -525,15 +498,14 @@ fig.add_trace(go.Bar(
     name='Negative'
 ))
 
-# Update layout for better readability
 fig.update_layout(
     title='<b>Top Features Correlating to Annual Temperature</b>',
     xaxis_title='Features',
     yaxis_title='Absolute PCA1 Loadings',
     yaxis=dict(tickformat=".2f"),
     xaxis=dict(
-        tickangle=45,  # Rotate x ticks
-        tickfont=dict(size=10)  # Make the font smaller
+        tickangle=45,  
+        tickfont=dict(size=10)  
     ),
     template='plotly_white',
     legend=dict(
@@ -587,17 +559,16 @@ rmse = np.sqrt(np.mean((z_df1.reset_index(drop=True) - z_df2.reset_index(drop=Tr
 
 rmse_sort = rmse.sort_values(ascending=False).head(20)
 
-# Create a bar chart
 fig = go.Figure(data=[go.Bar(
     x=rmse_sort.keys(),
     y=rmse_sort.values,
-    text=[round(i,4) for i in rmse_sort.values],  # Show the actual values as text
+    text=[round(i,4) for i in rmse_sort.values], 
     textposition='inside',
     # marker_color=colors,
     showlegend=False
 )])
 
-# Update layout for better readability
+
 fig.update_layout(
     title='<b>RCP 4.5 vs 8.5 RMSE of components</b>',
     xaxis_title='Features',

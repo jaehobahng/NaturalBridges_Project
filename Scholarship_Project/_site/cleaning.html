@@ -129,7 +129,7 @@ div.csl-indent {
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container">
     <a class="navbar-brand" href="./index.html">
-    <span class="navbar-title">Scholarship project</span>
+    <span class="navbar-title">Scholarship Project</span>
     </a>
   </div>
             <div id="quarto-search" class="" title="Search"></div>
@@ -266,13 +266,14 @@ div.csl-indent {
 <section id="description" class="level3">
 <h3 class="anchored" data-anchor-id="description">Description:</h3>
 <p>The study aimed to assess changes in climate metrics from historical conditions across the Southeastern Utah Group of National Parks. The data include historical and projected future average temperatures for two emission scenarios and 12 global circulation models, with annual and seasonal averages. Data were obtained by sampling representative locations in each park and simulating daily variables using the SOILWAT2 model.</p>
+<hr>
 </section>
 </section>
 <section id="dataset-comparison-clean-vs-raw" class="level1">
 <h1>Dataset Comparison (Clean vs Raw)</h1>
 <section id="clean-data-provided" class="level2">
 <h2 class="anchored" data-anchor-id="clean-data-provided">Clean Data (Provided)</h2>
-<p>The clean data seems to have filtered out many columns and rows. In order to figure out what was filtered, I impolemented a few filters on the original dataset to see if I could get the same shape as the clean data.</p>
+<p>It appears that the data cleaning process has significantly reduced the number of columns and rows. To understand what was filtered out, I applied several filters to the original dataset to try and match the shape of the cleaned data.</p>
 <ol type="1">
 <li>Filter columns</li>
 <li>Filter years 2021~2024</li>
@@ -513,6 +514,7 @@ Filtered Original Dataset shape :  (55802, 29)</code></pre>
 <section id="conclusion" class="level2">
 <h2 class="anchored" data-anchor-id="conclusion">Conclusion</h2>
 <p>Since the clean data was adding two filters to the original dataset, I decided to clean the original dataset to extract as much information as possible.</p>
+<hr>
 </section>
 </section>
 <section id="raw-data-cleaning" class="level1">
@@ -532,7 +534,7 @@ Filtered Original Dataset shape :  (55802, 29)</code></pre>
 <section id="finding-patterns" class="level2">
 <h2 class="anchored" data-anchor-id="finding-patterns">Finding Patterns</h2>
 <p>First we will try to find a pattern in how to clean the dataset. What is the unique identity for each row?</p>
-<p>By grouping vegetation, longitude, latitude, year, and scenario, we know that this isn’t enough to get a unique row.<br> Lets subset one combination to see what rows are in the given combination.</p>
+<p>By grouping vegetation, longitude, latitude, year, and scenario, we know that this isn’t enough to get a unique row.<br><br> Lets subset one combination to see what rows are in the given combination.</p>
 <div class="cell" data-execution_count="5">
 <details>
 <summary>Group Datasets</summary>
@@ -2589,31 +2591,19 @@ Filtered Original Dataset shape :  (55802, 29)</code></pre>
 <details>
 <summary>Data Cleaning</summary>
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>a <span class="op">=</span> test.drop(<span class="st">'RL'</span>, axis<span class="op">=</span><span class="dv">1</span>)</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>merged_df <span class="op">=</span> a.groupby(<span class="bu">list</span>(a.columns[<span class="dv">0</span>:<span class="dv">21</span>]), as_index<span class="op">=</span><span class="va">False</span>).agg(<span class="kw">lambda</span> x: <span class="bu">next</span>(<span class="bu">iter</span>(x.dropna()), np.nan))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>merged_df <span class="op">=</span> a.groupby(<span class="bu">list</span>(a.columns[<span class="dv">0</span>:<span class="dv">21</span>]), as_index<span class="op">=</span><span class="va">False</span>).agg(<span class="kw">lambda</span> x: <span class="bu">next</span>(<span class="bu">iter</span>(x.dropna()), np.nan))</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>rl <span class="op">=</span> test.groupby([<span class="st">'veg'</span>,<span class="st">'year'</span>,<span class="st">'long'</span>,<span class="st">'lat'</span>,<span class="st">'scenario'</span>])[<span class="st">'RL'</span>].mean().reset_index()</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>merged_df <span class="op">=</span> pd.merge(merged_df, rl, on<span class="op">=</span>[<span class="st">'veg'</span>, <span class="st">'year'</span>, <span class="st">'long'</span>, <span class="st">'lat'</span>, <span class="st">'scenario'</span>], how<span class="op">=</span><span class="st">'inner'</span>)</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Original dataset rows with RL removed : "</span>, merged_df.shape[<span class="dv">0</span>])</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"RL grouped and averaged by identifiers : "</span>, rl.shape[<span class="dv">0</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-</div>
-<div class="cell" data-execution_count="7">
-<details>
-<summary>Data Cleaning</summary>
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>rl <span class="op">=</span> test.groupby([<span class="st">'veg'</span>,<span class="st">'year'</span>,<span class="st">'long'</span>,<span class="st">'lat'</span>,<span class="st">'scenario'</span>])[<span class="st">'RL'</span>].mean().reset_index()</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>merged_df <span class="op">=</span> pd.merge(merged_df, rl, on<span class="op">=</span>[<span class="st">'veg'</span>, <span class="st">'year'</span>, <span class="st">'long'</span>, <span class="st">'lat'</span>, <span class="st">'scenario'</span>], how<span class="op">=</span><span class="st">'inner'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-</div>
-<div class="cell" data-execution_count="44">
-<details>
-<summary>Sanity Check</summary>
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Original dataset rows with RL removed : "</span>, merged_df.shape[<span class="dv">0</span>])</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"RL grouped and averaged by identifiers : "</span>, rl.shape[<span class="dv">0</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output cell-output-stdout">
-<pre><code>Original dataset rows with RL removed :  361487
-RL grouped and averaged by identifiers :  361487</code></pre>
-</div>
 </div>
 <div class="cell" data-execution_count="45">
 <details>
-<summary>Cleaned Data</summary>
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>merged_df.head()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<summary>After Cleaning</summary>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>merged_df.head()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-display" data-execution_count="45">
 <div>
@@ -3292,7 +3282,7 @@ RL grouped and averaged by identifiers :  361487</code></pre>
 <div class="cell" data-execution_count="35">
 <details>
 <summary>Output to CSV</summary>
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># merged_df.to_csv('../data/cleaned_df.csv', index=False)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># merged_df.to_csv('../data/cleaned_df.csv', index=False)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 

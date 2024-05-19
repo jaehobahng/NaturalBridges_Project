@@ -4,7 +4,7 @@ project:
 website:
   title: "Coverage Prediction"
   navbar:
-    title: "Scholarship project"
+    title: "Scholarship Project"
     # style: "docked"
     background: "primary"
     foreground: "light"
