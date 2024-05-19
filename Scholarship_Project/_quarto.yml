@@ -16,16 +16,17 @@ website:
         text: Data Cleaning
       - href: EDA.qmd
         text: EDA
-      - href: Analysis.qmd
-        text: Analysis
-      # - text: "Data"
-      #   menu:
-      #   - href: Data_Gathering.qmd
-      #     text: 4. Data Gathering
-      #   - href: Data_Cleaning.ipynb
-      #     text: 5. Data Cleaning
-      #   - href: Data_Exploration.ipynb
-      #     text: 6. Data Exploration
+      - text: "Analysis"
+        menu:
+          - href: Overview_Analysis.qmd
+            text: Overview
+          - href: Analysis_85.qmd
+            text: RCP8.5
+          - href: Analysis_45.qmd
+            text: RCP4.5
+      - href: Conclusion.qmd
+        text: Furture Actions
+
 
 bibliography: references.bib
 csl: nature.csl

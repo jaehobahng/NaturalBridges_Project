@@ -1,0 +1,829 @@
+---
+title: RCP 8.5 Analysis
+author: JaeHo Bahng
+date: 5/19/2024
+format:
+  html:
+    toc: true
+    code-fold: true
+fig-cap-location: bottom
+jupyter: python3
+---
+
+# Introduction
+
+Now we'll conduct a more detailed comparison within each RCP scenario(4.5, 8.5) to analyze how the highest temperature scenario and lowest temperature scenario within each group is similar or different.
+
+**Methodology**<br>
+We will use t-SNE with pearson correlation and PCA to visualize these datapoints onto 2D and 3D planes to check if we can visually distinguish between the different scenarios. Then, we will use the original feature's influence on the generated components to hypothesize what features effect the annual temperature the most.
+
+```{python}
+#| code-summary: Import module / Set options and theme
+#| vscode: {languageId: python}
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+import xml.etree.ElementTree as ET
+import plotly.express as px
+import plotly.graph_objects as go
+from scipy.stats import ttest_rel
+from statsmodels.stats.weightstats import ttest_ind
+import numpy as np
+import pingouin as pg
+from scipy.stats import zscore
+import plotly.graph_objects as go
+import pandas as pd
+from plotly.subplots import make_subplots
+import warnings
+import numpy as np
+import pandas as pd
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+import numpy as np
+import pandas as pd
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+import plotly.express as px
+from sklearn.manifold import TSNE
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+warnings.filterwarnings("ignore")
+
+pd.set_option('display.max_columns', None)
+pd.set_option('display.precision', 10)
+```
+
+```{python}
+#| code-summary: Import cleaned data
+#| vscode: {languageId: python}
+
+df = pd.read_csv('../data/cleaned_df.csv')
+df['Location_ID'] = df.groupby(['long', 'lat']).ngroup() + 1
+
+group_list = ['Park', 'long', 'lat', 'veg', 'year', 'TimePeriod', 'RCP','treecanopy', 'Ann_Herb', 'Bare', 'Herb', 'Litter', 'Shrub', 'El', 'Sa','Cl', 'RF', 'Slope', 'E', 'S']
+veg_location = df.drop(labels='scenario',axis=1).groupby(group_list).mean().reset_index()
+# veg_location['T_Annual'] = (veg_location['T_Annual'] - veg_location['T_Annual'].min()) / (veg_location['T_Annual'].max() - veg_location['T_Annual'].min())
+
+
+# Average Scenario Dataset
+# Convert to numeric, coercing errors to NaN
+numeric_series = pd.to_numeric(veg_location['RCP'], errors='coerce')
+
+# Fill NaNs with original non-numeric values
+veg_location['RCP'] = numeric_series.fillna(veg_location['RCP'])
+
+four = veg_location[veg_location['RCP'].isin([4.5])]
+eight = veg_location[veg_location['RCP'].isin([8.5])]
+four_h = veg_location[veg_location['RCP'].isin(['historical'])]
+four_h['RCP'] = 4.5
+eight_h = veg_location[veg_location['RCP'].isin(['historical'])]
+eight_h['RCP'] = 8.5
+
+df_con = pd.concat([four_h, four, eight_h, eight], ignore_index=True)
+df_con['Location_ID'] = df_con.groupby(['long', 'lat']).ngroup() + 1
+
+
+# Scenario Dataset
+# Convert to numeric, coercing errors to NaN
+numeric_series = pd.to_numeric(df['RCP'], errors='coerce')
+
+numeric_series
+
+# Fill NaNs with original non-numeric values
+df['RCP'] = numeric_series.fillna(df['RCP'])
+
+four = df[df['RCP'].isin([4.5])]
+eight = df[df['RCP'].isin([8.5])]
+four_h = df[df['RCP'].isin(['historical'])]
+four_h['RCP'] = 4.5
+eight_h = df[df['RCP'].isin(['historical'])]
+eight_h['RCP'] = 8.5
+
+df_orig = pd.concat([four_h, four, eight_h, eight], ignore_index=True)
+df_orig['Location_ID'] = df_orig.groupby(['long', 'lat']).ngroup() + 1
+
+selected_columns = [col for col in df.columns if not col.startswith(('T_', 'Tmin', 'Tmax'))]
+dropped_columns = [col for col in df.columns if col.startswith(('T_', 'Tmin', 'Tmax'))]
+filtered_df = df_orig[selected_columns]
+filtered_df['T_Annual'] = df_orig['T_Annual']
+
+df_orig = filtered_df
+```
+
+# RCP = 8.5
+For RCP 8.5, we will be comparing Scenario 60(High) vs Scenario 58(Low) to see if there is a difference in features that affect Annual Temperature according to the RCP values.
+
+## t-SNE (1st Trial)
+
+**What is t-SNE?**
+t-SNE (t-distributed Stochastic Neighbor Embedding) is a dimensionality reduction technique particularly effective in visualizing high-dimensional data. It works by converting similarities between data points into joint probabilities and minimizing the Kullback-Leibler divergence between these joint probabilities in the high-dimensional and low-dimensional space. This results in a map where similar objects are modeled by nearby points and dissimilar objects by distant points. When interpreting a t-SNE plot, clusters indicate groups of similar data points, suggesting patterns or structures within the data. However, the distances between clusters and the exact positioning can sometimes be arbitrary, so the focus should be on the local neighborhood structures rather than global distances.
+
+**Analysis Methodology**<br>
+
+1. Conduct t-SNE on the dataset to retrieve 2 or 3 newly made components to visualize this onto a 2D or 3D plane. If we see a pattern or grouping of scenarios.
+2. Apply the pearson correlation to analyze which original features correlate to the t-SNE components.
+3. Hypothesize which features effect annual temperature
+
+### 2D Plot
+
+```{python}
+#| code-summary: t-SNE(RCP = 8.5)
+#| vscode: {languageId: python}
+
+data_85 = df_orig[(df_orig['RCP']==8.5) & (df_orig['year'].isin(range(2095,2100)))].dropna(axis=1, how='any')
+X = data_85.iloc[:,list(range(1, 3))+ list(range(8, len(data_85.columns)-3))]
+y = data_85.iloc[:,len(data_85.columns)-3]
+
+# Standardize the features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+scaler = StandardScaler()
+y_scaled = pd.Series(scaler.fit_transform(y.values.reshape(-1,1)).flatten())
+
+# Perform t-SNE on the features
+tsne = TSNE(n_components=2, random_state=42)
+tsne_results = tsne.fit_transform(X_scaled)
+
+data_85['tsne1'] = tsne_results[:, 0]
+data_85['tsne2'] = tsne_results[:, 1]
+
+# Visualize the results with Plotly
+fig = px.scatter(
+    data_85,
+    x='tsne1',
+    y='tsne2',
+    color='scenario',
+    title='<b>t-SNE For All Scenarios (RCP = 8.5)</b>',
+    labels={'tsne1': 't-SNE1', 'tsne2': 't-SNE2'},
+    opacity=0.5,
+    hover_data={'Location_ID': True, 'year':True}
+)
+
+fig.update_layout(
+    margin=dict(l=10, r=10, b=10, t=40),  # Adjust the values as needed
+    title_x=0.5,
+    title_y=0.95,
+)
+
+fig.show()
+
+# Visualize the results with Plotly
+fig = px.scatter(
+    data_85[data_85['scenario'].isin(['sc60','sc58'])],
+    x='tsne1',
+    y='tsne2',
+    color='scenario',
+    title='<b>t-SNE For Scenario 60 and 58 (RCP = 8.5)</b>',
+    labels={'tsne1': 't-SNE1', 'tsne2': 't-SNE2'},
+    opacity=0.5,
+    hover_data={'Location_ID': True, 'year':True}
+)
+
+fig.update_layout(
+    margin=dict(l=10, r=10, b=10, t=40),  # Adjust the values as needed
+    title_x=0.5,
+    title_y=0.95,
+)
+
+fig.show()
+```
+
+The analysis demonstrates that t-SNE effectively groups similar data points together, with distinct clusters representing unique scenario and year combinations even when 'year' wasn't part of the input data. This clear grouping contrasts with PCA, which stretched data points across an axis to portray differences within a scenario. In comparing scenarios 60 and 58, the second plot shows that we can distinguish the two scenarios slightly by t-SNE2. Most scenario 60 points are above 15 of t-SNE2 with some exceptions. We can see almost the entire year 2098 of scenario 60 clustered below t-SNE2 = 0.
+
+```{python}
+#| vscode: {languageId: python}
+corr_matrix = data_85.iloc[:,8:].corr()
+#| code-summary: Correlation Feature Importance
+
+# Sort the features by the absolute value of the loading for PCA1
+sorted_loadings_1 = corr_matrix['tsne2'].abs().sort_values(ascending=False)
+top_features_1 = sorted_loadings_1.head(20).index
+top_loadings_1 = round(corr_matrix['tsne2'].loc[top_features_1,],4)[1:]
+colors_1 = ['blue' if val > 0 else 'red' for val in top_loadings_1]
+
+# Create a bar chart
+fig = go.Figure(data=[go.Bar(
+    x=top_loadings_1.index,
+    y=top_loadings_1.abs(),
+    text=top_loadings_1.values,  # Show the actual values as text
+    textposition='inside',
+    marker_color=colors_1,
+    showlegend=False
+)])
+
+# Add legend manually
+fig.add_trace(go.Bar(
+    x=[None], y=[None],
+    marker=dict(color='blue'),
+    showlegend=True,
+    name='Positive'
+))
+fig.add_trace(go.Bar(
+    x=[None], y=[None],
+    marker=dict(color='red'),
+    showlegend=True,
+    name='Negative'
+))
+
+# Update layout for better readability
+fig.update_layout(
+    title='<b>Top Features Correlating to t-SNE2</b>',
+    xaxis_title='Features',
+    yaxis_title='Absolute t-SNE1 Loadings',
+    yaxis=dict(tickformat=".2f"),
+    xaxis=dict(
+        tickangle=45,  # Rotate x ticks
+        tickfont=dict(size=10)  # Make the font smaller
+    ),
+    template='plotly_white',
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    ),
+    margin=dict(l=20, r=20, b=20, t=60)
+)
+
+fig.show()
+```
+
+This plot highlights the top features that correlate with t-SNE2 to get a better idea of how the scenarios were divided. What was most noticable was that rather than a certain category of varibles such as SWC, WCA, or percipitation, various features of the summer season were highly ranked. 
+
+**What does this mean?**<br>
+*Rather than an absolute value of a feature effecting the temperature, it may be the ratio or the relationship between features.*<br>
+For example it may be the ratio of how much rain there is to how much it evaporates rather than how the rain directly effects temperature. Lets go ahead and perform some feature engineering! 
+
+
+**Actions to Take**<br>
+*We'll add all possible ratio for summer related variables and drop the original summer variables to prevent colinearity within our visualizations.* Then we'll re-perform our 2D t-SNE analysis to see if we can get a better result and see which features influenced our visualization.
+
+## Feature Engineering
+Here is a snippet of the datset that contain each summer feature combination ratio. This dataset will be merged to the original dataset and the single summer related columns will be dropped to prevent colinearity.
+
+```{python}
+#| code-summary: Create summer ratio features
+#| vscode: {languageId: python}
+data_1 = df_orig[(df_orig['RCP']==8.5) & (df_orig['year'].isin(range(2095,2100)))].dropna(axis=1, how='any')
+
+selected_columns = [col for col in data_1.columns if 'summer' in col.lower()]
+dropped_columns = [col for col in data_1.columns if not 'summer' in col.lower()]
+filtered_df = data_1[selected_columns]
+
+# Get the list of columns
+columns = filtered_df.columns
+ratios = {}
+
+# Calculate the ratios
+for i, col1 in enumerate(columns):
+    for col2 in columns[i+1:]:
+        ratio_col_name = f"{col1}/{col2}"
+        ratios[ratio_col_name] = filtered_df[col1] / filtered_df[col2]
+
+ratios_df = pd.DataFrame(ratios)
+ratios_df.iloc[:,25:].head()
+```
+
+## t-SNE (2nd Trial)
+This time we'll drop the original summer related features and replace them with the engineered features and perform t-SNE one more time to see if we can better define the scenarios.
+
+### 2D t-SNE
+
+```{python}
+#| code-summary: t-SNE(RCP = 8.5)
+#| vscode: {languageId: python}
+
+eng_85 = pd.concat([data_1[dropped_columns], ratios_df], axis=1)
+
+
+# Step 1: Identify columns with inf or -inf
+cols_with_inf = eng_85.iloc[:,8:].columns.to_series()[np.isinf(eng_85.iloc[:,8:]).any()]
+
+# Step 2: Drop those columns
+eng_85.drop(columns=cols_with_inf, inplace=True)
+eng_85.dropna(inplace=True)
+
+X = eng_85.iloc[:,list(range(8, len(eng_85.columns)-1))]
+y = eng_85.iloc[:,len(eng_85.columns)-3]
+
+# Standardize the features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+scaler = StandardScaler()
+y_scaled = pd.Series(scaler.fit_transform(y.values.reshape(-1,1)).flatten())
+
+# Perform t-SNE on the features
+tsne = TSNE(n_components=2, random_state=42)
+tsne_results = tsne.fit_transform(X_scaled)
+
+eng_85['tsne1'] = tsne_results[:, 0]
+eng_85['tsne2'] = tsne_results[:, 1]
+
+# Visualize the results with Plotly
+fig = px.scatter(
+    eng_85,
+    x='tsne1',
+    y='tsne2',
+    color='scenario',
+    title='<b>t-SNE For All Scenarios (RCP = 8.5)</b>',
+    labels={'tsne1': 't-SNE1', 'tsne2': 't-SNE2'},
+    opacity=0.5,
+    hover_data={'Location_ID': True, 'year':True}
+)
+
+fig.update_layout(
+    margin=dict(l=10, r=10, b=10, t=40),  # Adjust the values as needed
+    title_x=0.5,
+    title_y=0.95,
+)
+
+fig.show()
+
+# Visualize the results with Plotly
+fig = px.scatter(
+    eng_85[eng_85['scenario'].isin(['sc60','sc58'])],
+    x='tsne1',
+    y='tsne2',
+    color='scenario',
+    title='<b>t-SNE For Scenario 60 and 58 (RCP = 8.5)</b>',
+    labels={'tsne1': 't-SNE1', 'tsne2': 't-SNE2'},
+    opacity=0.5,
+    hover_data={'Location_ID': True, 'year':True}
+)
+
+fig.update_layout(
+    margin=dict(l=10, r=10, b=10, t=40),  # Adjust the values as needed
+    title_x=0.5,
+    title_y=0.95,
+)
+
+fig.show()
+```
+
+Through the 2D plot with only scenarios 60 and 58, we can see that t-SNE has become a better indicator for dividing the two scenarios than our earlier dataset without featuere engineering. The higher t-SNE2 is the higher the temperature(scenario 58) and the lower t-SNE2 is the lower the tempearture(scenario 60). t-SNE1 acts like feature that divides points within a scenario. When you examine the scenario 60 points that are above t-SNE2 = 0 you can see that most points in the right upper hand of the plot are from the year 2098, and we'll look into why this is a bit later.
+
+```{python}
+#| vscode: {languageId: python}
+corr_matrix = eng_85.iloc[:,8:].corr()
+#| code-summary: Correlation Feature Importance
+
+# Sort the features by the absolute value of the loading for PCA1
+sorted_loadings_1 = corr_matrix['tsne1'].abs().sort_values(ascending=False)
+top_features_1 = sorted_loadings_1.head(20).index
+top_loadings_1 = round(corr_matrix['tsne1'].loc[top_features_1,],4)[1:]
+colors_1 = ['blue' if val > 0 else 'red' for val in top_loadings_1]
+
+# Sort the features by the absolute value of the loading for PCA1
+sorted_loadings_2 = corr_matrix['tsne2'].abs().sort_values(ascending=False)
+top_features_2 = sorted_loadings_2.head(20).index
+top_loadings_2 = round(corr_matrix['tsne2'].loc[top_features_2,],4)[1:]
+colors_2 = ['blue' if val > 0 else 'red' for val in top_loadings_2]
+
+# Create a bar chart
+fig = go.Figure(data=[go.Bar(
+    x=top_loadings_1.index,
+    y=top_loadings_1.abs(),
+    text=top_loadings_1.values,  # Show the actual values as text
+    textposition='inside',
+    marker_color=colors_1,
+    showlegend=False
+)])
+
+# Add legend manually
+fig.add_trace(go.Bar(
+    x=[None], y=[None],
+    marker=dict(color='blue'),
+    showlegend=True,
+    name='Positive'
+))
+fig.add_trace(go.Bar(
+    x=[None], y=[None],
+    marker=dict(color='red'),
+    showlegend=True,
+    name='Negative'
+))
+
+# Update layout for better readability
+fig.update_layout(
+    title='<b>Top Features Correlating to t-SNE1</b>',
+    xaxis_title='Features',
+    yaxis_title='Absolute t-SNE1 Loadings',
+    yaxis=dict(tickformat=".2f"),
+    xaxis=dict(
+        tickangle=45,  # Rotate x ticks
+        tickfont=dict(size=10)  # Make the font smaller
+    ),
+    template='plotly_white',
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    ),
+    margin=dict(l=20, r=20, b=20, t=60)
+)
+
+fig.show()
+
+# Create a bar chart
+fig = go.Figure(data=[go.Bar(
+    x=top_loadings_2.index,
+    y=top_loadings_2.abs(),
+    text=top_loadings_2.values,  # Show the actual values as text
+    textposition='inside',
+    marker_color=colors_2,
+    showlegend=False
+)])
+
+# Add legend manually
+fig.add_trace(go.Bar(
+    x=[None], y=[None],
+    marker=dict(color='blue'),
+    showlegend=True,
+    name='Positive'
+))
+fig.add_trace(go.Bar(
+    x=[None], y=[None],
+    marker=dict(color='red'),
+    showlegend=True,
+    name='Negative'
+))
+
+# Update layout for better readability
+fig.update_layout(
+    title='<b>Top Features Correlating to t-SNE2</b>',
+    xaxis_title='Features',
+    yaxis_title='Absolute t-SNE2 Loadings',
+    yaxis=dict(tickformat=".2f"),
+    xaxis=dict(
+        tickangle=45,  # Rotate x ticks
+        tickfont=dict(size=10)  # Make the font smaller
+    ),
+    template='plotly_white',
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    ),
+    margin=dict(l=20, r=20, b=20, t=60)
+)
+
+fig.show()
+```
+
+**What does this mean?**<br>
+First, lets look at the feature correlations with the t-SNE2 value which divided the two scenarios. The "Top Features Correlating to t-SNE2" plot below shows that most highly ranked features were the ratio features that we added to the dataset. I think its safe to say that it was a successful hypothesis that summer ratio features would matter! Lets interpret the first few features for a sanity check to see if the results make sense logically. 
+
+1. PPT_Summer/VWC_Summer_Whole : This featuer has a negative correlation with t-SNE2 meaning that a higher temperature (higher temperatuer for scenario 58) would occur when this feature is lower. This feature gets lower when there is not much percipitation but large volumetric water in the soil.
+
+2. PPT_Summer/VWC_Summer_top50 : The same analysis can be done as the first feature. The difference would be that this feature only looks at the top 50cm instead of the entire soil.
+
+3. SWA_Summer_top50/VWC_Summer_whole : This feature also has a negative correlation meaning it has to be low in order for temmperatures to increase(scenario 58). What does it mean when "Soil Water Availability" is low but "Volumetric Water Content" is high? The main difference between the two features is  Soil water availability is determined not only by the amount of water present but also by how easily plants can extract it whereas "Volumetric Water Content" only looks at the pure volume of water. This means that soils that are efficient (low volume but high accessibility for plants) have a positive on decreasing the temperature. We'll dive deeper into all implications in the conclusion.
+
+Secondly, lets take a look at features that correlate with t-SNE1 which acted as a feature to differentiate scenarios. As you can see in the t-SNE1 plot, Other than the top 2 features, all other featuers that were not made from feature engineering and are from the original dataset. This enforces our idea that the t-SNE was used create datapoints within scenarios rather than differentiate between different scenarios.
+
+Lets make a 3D plot to see if we can get a better insight.
+
+### 3D t-SNE
+
+```{python}
+#| code-summary: 3D t-SNE (RCP = 8.5)
+#| vscode: {languageId: python}
+
+# Step 1: Identify columns with inf or -inf
+cols_with_inf = eng_85.iloc[:,8:].columns.to_series()[np.isinf(eng_85.iloc[:,8:]).any()]
+
+# Step 2: Drop those columns
+eng_85.drop(columns=cols_with_inf, inplace=True)
+eng_85.dropna(inplace=True)
+
+X = eng_85.iloc[:,list(range(8, len(eng_85.columns)-1))]
+y = eng_85.iloc[:,len(eng_85.columns)-3]
+
+# Standardize the features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+scaler = StandardScaler()
+y_scaled = pd.Series(scaler.fit_transform(y.values.reshape(-1,1)).flatten())
+
+# Perform t-SNE on the features
+tsne = TSNE(n_components=3, random_state=42)
+tsne_results = tsne.fit_transform(X_scaled)
+
+eng_85['tsne1'] = tsne_results[:, 0]
+eng_85['tsne2'] = tsne_results[:, 1]
+eng_85['tsne3'] = tsne_results[:, 2]
+```
+
+```{python}
+#| code-summary: 3D t-SNE Plot
+#| vscode: {languageId: python}
+# Visualize the results with Plotly in 3D
+fig = px.scatter_3d(
+    eng_85,
+    x='tsne1',
+    y='tsne2',
+    z='tsne3',
+    color='scenario',
+    title='<b>3D t-SNE For All Scenarios</b>',
+    labels={'tsne1': 't-SNE1', 'tsne2': 't-SNE2', 'tsne3': 't-SNE3'},
+    opacity=0.5,
+    size_max=0.1,
+    hover_data={'Location_ID': True, 'year': True}
+    
+)
+
+fig.update_traces(marker=dict(size=3))  # Adjust the size value as needed
+
+
+# Update layout to adjust padding and margins
+fig.update_layout(
+    margin=dict(l=5, r=5, b=5, t=20),  # Adjust the values as needed
+    title_x=0.5,
+    title_y=0.95,
+    scene=dict(
+        xaxis=dict(title='t-SNE1'),
+        yaxis=dict(title='t-SNE2'),
+        zaxis=dict(title='t-SNE3'),
+                camera=dict(
+            eye=dict(x=0.2, y=0, z=-2)
+                )
+    )
+)
+fig.show()
+
+# Visualize the results with Plotly in 3D
+fig = px.scatter_3d(
+    eng_85[eng_85['scenario'].isin(['sc60','sc58'])],
+    x='tsne1',
+    y='tsne2',
+    z='tsne3',
+    color='scenario',
+    title='<b>3D t-SNE For Scenario 60 and 58</b>',
+    labels={'tsne1': 't-SNE1', 'tsne2': 't-SNE2', 'tsne3': 't-SNE3'},
+    opacity=0.5,
+    size_max=0.1,
+    hover_data={'Location_ID': True, 'year': True}
+    
+)
+
+fig.update_traces(marker=dict(size=3))  # Adjust the size value as needed
+
+
+# Update layout to adjust padding and margins
+fig.update_layout(
+    margin=dict(l=5, r=5, b=5, t=20),  # Adjust the values as needed
+    title_x=0.5,
+    title_y=0.95,
+    scene=dict(
+        xaxis=dict(title='t-SNE1'),
+        yaxis=dict(title='t-SNE2'),
+        zaxis=dict(title='t-SNE3'),
+                camera=dict(
+            eye=dict(x=0.2, y=0, z=-2)
+                )
+    )
+)
+fig.show()
+```
+
+Although t-SNE3 was not a valid feature to divide the scenarios, the depth allowed other t-SNE results to portray the difference better. From the 3D plot showing only scenario 60 and 58, we can see an interesting visual pattern between the two scenarios and you can almost see a circular shape between the two scenarios. But if you examine the points a bit more, you can see that most scenario 60 data points are located on the t-SNE2 < 0 and t-SNE1 > 0 section of the graph. Of course other than our outlier the 2098 year. Lets take a look at the correlation between the original features and t-SNE components on the plots below to dive into details.
+
+```{python}
+#| code-summary: t-SNE correlation(RCP=8.5)
+#| vscode: {languageId: python}
+
+corr_matrix = eng_85.iloc[:,8:].corr()
+#| code-summary: Correlation Feature Importance
+
+# Sort the features by the absolute value of the loading for PCA1
+sorted_loadings_3 = corr_matrix['tsne3'].abs().sort_values(ascending=False)
+top_features_3 = sorted_loadings_3.head(20).index
+top_loadings_3 = round(corr_matrix['tsne3'].loc[top_features_3,],4)[1:]
+colors_3 = ['blue' if val > 0 else 'red' for val in top_loadings_3]
+
+sorted_loadings_2 = corr_matrix['tsne2'].abs().sort_values(ascending=False)
+top_features_2 = sorted_loadings_2.head(20).index
+top_loadings_2 = round(corr_matrix['tsne2'].loc[top_features_2,],4)[1:]
+colors_2 = ['blue' if val > 0 else 'red' for val in top_loadings_2]
+
+sorted_loadings_1 = corr_matrix['tsne1'].abs().sort_values(ascending=False)
+top_features_1 = sorted_loadings_1.head(20).index
+top_loadings_1 = round(corr_matrix['tsne1'].loc[top_features_1,],4)[1:]
+colors_1 = ['blue' if val > 0 else 'red' for val in top_loadings_1]
+
+# Create a bar chart
+fig = go.Figure(data=[go.Bar(
+    x=top_loadings_1.index,
+    y=top_loadings_1.abs(),
+    text=top_loadings_1.values,  # Show the actual values as text
+    textposition='inside',
+    marker_color=colors_1,
+    showlegend=False
+)])
+
+# Add legend manually
+fig.add_trace(go.Bar(
+    x=[None], y=[None],
+    marker=dict(color='blue'),
+    showlegend=True,
+    name='Positive'
+))
+fig.add_trace(go.Bar(
+    x=[None], y=[None],
+    marker=dict(color='red'),
+    showlegend=True,
+    name='Negative'
+))
+
+# Update layout for better readability
+fig.update_layout(
+    title='<b>Top Features Correlating to t-SNE1</b>',
+    xaxis_title='Features',
+    yaxis_title='Absolute t-SNE1 Loadings',
+    yaxis=dict(tickformat=".2f"),
+    xaxis=dict(
+        tickangle=45,  # Rotate x ticks
+        tickfont=dict(size=10)  # Make the font smaller
+    ),
+    template='plotly_white',
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    ),
+    margin=dict(l=20, r=20, b=20, t=60)
+)
+
+fig.show()
+
+# Create a bar chart
+fig = go.Figure(data=[go.Bar(
+    x=top_loadings_2.index,
+    y=top_loadings_2.abs(),
+    text=top_loadings_2.values,  # Show the actual values as text
+    textposition='inside',
+    marker_color=colors_2,
+    showlegend=False
+)])
+
+# Add legend manually
+fig.add_trace(go.Bar(
+    x=[None], y=[None],
+    marker=dict(color='blue'),
+    showlegend=True,
+    name='Positive'
+))
+fig.add_trace(go.Bar(
+    x=[None], y=[None],
+    marker=dict(color='red'),
+    showlegend=True,
+    name='Negative'
+))
+
+# Update layout for better readability
+fig.update_layout(
+    title='<b>Top Features Correlating to t-SNE2</b>',
+    xaxis_title='Features',
+    yaxis_title='Absolute t-SNE2 Loadings',
+    yaxis=dict(tickformat=".2f"),
+    xaxis=dict(
+        tickangle=45,  # Rotate x ticks
+        tickfont=dict(size=10)  # Make the font smaller
+    ),
+    template='plotly_white',
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    ),
+    margin=dict(l=20, r=20, b=20, t=60)
+)
+
+fig.show()
+```
+
+**So how does our 3D t-SNE differ with the 2D t-SNE?**
+
+**Similarities**<br>
+The correlation between the original featuers and t-SNE features portray a similar pattern. 
+
+ - t-SNE1 is highly correlated with feature groups such as VWC, SWA, WetSoilDays that are not features that were engineered, but were used to differentiate data points within a scenario.
+ - t-SNE2 has a negative correlation with the engineered features that are ratios of the summer features.
+
+**Differences**<br>
+The main difference is the features that correlate with t-SNE2. Although for both t-SNE models t-SNE2 was the main component that separated the two scenarios, and was componsed of engineered features, the engineered featuers that were highly ranked had slight differences. Here are a few features that are only in this t-SNE2's components.
+
+1. Transp_Summer/VWC_Summer_whole : This feature has a negative correlation meaning that this value has to be low for the higher temperature scenarios. This means Transpiration must be low and volume of water needs to be high. In meaning it has a similar definition with the SWA_Summer_top50/VWC_Summer_whole variable.
+
+2. PPT Annual : Also, places with less percipitation had a higher temperature.
+
+
+### Conclusion
+By conducting feature engineering and applying it to 2D and 3D t-SNE models, we see a pattern that "summer ratio" features have a high correlation with a t-SNE component that is able to differentiate the scenario with the highest temperature and the lowest temperature. What we can do with these insights will be discussed further in the future steps secion.
+
+## Question : What was special about 2098?
+As we saw in the visualizations with t-SNE, we've noticed that 2098 of scenario 60 keeps acting like an outlier. *Why is this?* Is there a problem in the logic or are the datapoints actual outliers. 
+
+The answer is that for some reason the datapoints of 2098 really are outliers within the timeseries data of scenario 60. Not only is the temperature higher than its past or future values, its features almost look like its from a different scenario. A lineplot with a few variables plotted out will help your understanding.
+
+```{python}
+#| code-summary: 'Find maximum, minimum 2098 features'
+#| vscode: {languageId: python}
+
+temp = eng_85.iloc[:,[4,7] + list(range(8,(len(data_1.columns))))]
+temp = temp[temp['scenario'].isin(['sc60'])]
+
+temp = temp.groupby(['year','scenario']).mean().reset_index()
+
+# Find the row corresponding to the year 2098
+row_2098 = temp[temp['year'] == 2098].iloc[0]
+
+def is_constant(column):
+    return len(column.unique()) == 1
+
+# Find columns where the value for the year 2098 is the maximum or minimum in the column
+max_cols = [col for col in temp.columns if not is_constant(temp[col]) and temp[col].max() == row_2098[col]]
+min_cols = [col for col in temp.columns if not is_constant(temp[col]) and temp[col].min() == row_2098[col]]
+```
+
+```{python}
+#| code-summary: Plot 2098 difference
+#| vscode: {languageId: python}
+
+# List of features to be plotted
+features = [
+    "T_Annual",
+    "DrySoilDays_Spring_top50",
+    "DrySoilDays_Summer_top50/Evap_Summer",
+    "SWA_Spring_whole"
+]
+
+# Create the 2x2 subplot layout
+fig = make_subplots(rows=2, cols=2, 
+                    subplot_titles=[f"<b>{feature}</b>" for feature in features],
+                    horizontal_spacing=0.2,
+                    vertical_spacing=0.2
+                    )
+
+# Add bar charts for each feature to the subplots
+for i, feature in enumerate(features):
+    fig.add_trace(
+        go.Line(
+            x=temp['year'],
+            y=temp[feature],
+            text=[round(val, 2) for val in temp[feature]],  # Show the actual values as text
+            # textposition='inside',
+            showlegend=False,
+            name=feature
+        ),
+        row=(i//2) + 1, col=(i%2) + 1
+    )
+
+    # Update x and y axis titles for each subplot
+    fig.update_xaxes(title_text='Year', row=(i//2) + 1, col=(i%2) + 1)
+    fig.update_yaxes(title_text=feature, tickformat=".2f", row=(i//2) + 1, col=(i%2) + 1)
+
+# Update layout for better readability and center the main title
+fig.update_layout(
+    title={
+        'text': "<b>2095~2099 Values for Different Features for Scenario 60</b>",
+        'x': 0.5,  # Center the title
+        'y': 0.99,
+        'xanchor': 'center',
+        'yanchor': 'top',
+        'font': {'size': 18}
+    },
+    template='plotly_white',
+    margin=dict(l=20, r=20, b=20, t=60),
+    height=700
+)
+
+# Update subplot title font sizes
+for annotation in fig['layout']['annotations']:
+    annotation['font'] = dict(size=12)  # Subplot title font size
+
+fig.show()
+```
+
+# Conclusion
+By conducting feature engineering with the summer season variables, and finding each the ratio for every unique combination, we were able to successfully find patterns and hypothesize what makes the highest and the lowest temperature scenarios different with the RCP8.5 group. Most features that were deemed as important when separating scenarios were the engineered features that had VWC on the denominator and had to have a higher value in order for the annual temperature to rise. Since the features on the numerator were characteristics like percipitation, evaporation or SWA, we can hypothesize that VWC has to be high in relation to the other numerator variables in order to maintain a lower temperature.
+

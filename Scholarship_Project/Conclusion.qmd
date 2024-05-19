@@ -1,0 +1,56 @@
+---
+title: Conclusion / Future Actions
+author: JaeHo Bahng
+date: 5/19/2024
+format:
+  html:
+    toc: true
+    code-fold: true
+fig-cap-location: bottom
+jupyter: python3
+---
+
+# Previous Findings Recap
+
+## RCP 8.5
+For RCP 8.5, we were able to find logical correlations between the highest and lowest temperature scenarios for RCP8.5 by conducting feature engineering and creating ratios between all combination of "summer" related features, and we were also able to hypothesize which features created variance within scenarios.
+
+The top features that created a difference between scenarios were the engineered ratio features. For example, the feature PPT_Summer/VWC_Summer_Whole negatively correlated with t-SNE2, meaning higher precipitation and lower volumetric water content in the soil led to higher temperatures. 
+
+On the other hand, features that generated points within a scenario were the original feature such as VWC, SWA, WetSoilDays and more.
+
+In conclusion, the feature engineering and application to 2D and 3D t-SNE models demonstrated that "summer ratio" features highly correlate with a t-SNE component that differentiates the scenarios with the highest and lowest temperatures.
+
+## RCP 4.5
+Although the overall trend of which features influenced scenario data generation and scenario differentiation were similar, the degree in which the visualizations were interpretable were different from RCP8.5. The visualizations gave us enough information to hypothesize what features effected the scenario differentiation, but didn't give us enough to predict which original features effected the annual temperature. 
+
+## Why are the results different?
+One theory is that since RCP8.5 had a steeper increase in annual temperature compared to RCP4.5, the difference between scenarios are more evident thus making it easier to differentiate through visualizations. The temperature difference between highest and lowest scenario is grater for RCP8.5 as shown in the EDA secsion as the difference for the RCP4.5 scenarios is 2.5 whereas the difference is 3.5 for RCP8.5. Furthermore, the variance within each scenerio is greater for RCP8.5 than 4.5.
+
+# Future Action
+Lets talk about some future actions we can take to lower the temperature based on the features that we hypothesized would effect annual temperature the most.
+
+*We will talk about actions for features we can work on. For example, percipitation related features will not be discussed regardless of their ranking.*
+
+1. Soil Water Availability / Volumetric Water Content (High value = Low Temperature)
+ - Why does this happen? : 
+ 
+    Achieving high soil water availability (SWA) with low volumetric water content (VWC) involves enhancing soil structure, managing compaction, optimizing irrigation, and using appropriate soil amendments. Adding organic matter and using cover crops improve soil structure and porosity, while minimal tillage and subsoiling reduce compaction. Efficient irrigation methods like drip irrigation and the use of soil conditioners such as gypsum help make water readily available to plants. Mulching and selecting deep-rooted or drought-tolerant plants also contribute to maintaining optimal soil moisture without excessive VWC.
+
+ - What measures can we take to keep this value high? : 
+
+    - Incorporate Organic Matter: Regularly add compost, manure, or green manures to improve soil structure and porosity.
+    - Use Cover Crops: Plant cover crops to enhance organic content, improve soil structure, and reduce erosion.
+    - Practice Minimal Tillage: Avoid excessive tillage to prevent soil compaction and maintain good soil structure.
+    - Subsoiling: Use subsoiling or deep ripping to break up compacted layers and enhance water infiltration and root penetration.
+
+2. Transpiration / Volumetric Water Content (High value = Low Temperature)
+ - Why does this happen? : 
+    1. Low Plant Density : Areas with sparse vegetation or low plant density will have lower overall transpiration rates. With fewer plants to uptake and transpire water, the soil can retain more moisture, leading to high VWC
+    2. Dormant/Stressed Plants : Plants that are dormant (during certain seasons) or stressed (due to disease or poor health) may have reduced transpiration rates. This can lead to soil retaining more water, increasing VWC.
+
+ - What measures can we take to keep this value high? : 
+     - Optimize Plant Density and Selection : Densely planting more wil increase overall transpiration rates and balance soil moisture levels. In addition, choosing plants suited to the local climate that have higher transpiration rates are crucial.
+
+# Conclusion
+Features that effect annual temperature prediction the most are ratios of summer seasonal features rather than the value of the original feature itself. Meaning that high percipitation may not be important bur rather the ratio of percipitation to water in the soil is important. Based on these findings, we can take measures to prevent the temperature from rising, although further analysis on RCP4.5 scenarios must be done to have a more exact hypothesis for relationships.
