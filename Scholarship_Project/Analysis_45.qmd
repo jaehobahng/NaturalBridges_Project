@@ -14,8 +14,16 @@ jupyter: python3
 
 Now we'll conduct a more detailed comparison with RCP4.5 to analyze how the highest temperature scenario and lowest temperature scenario within each group is similar or different.
 
-**Methodology**<br>
+### Methodology
 We will use t-SNE with pearson correlation and PCA to visualize these datapoints onto 2D and 3D planes to check if we can visually distinguish between the different scenarios. Then, we will use the original feature's influence on the generated components to hypothesize what features effect the annual temperature the most.
+
+### Data Filtering
+In order to extract an amplified version of correlations, and to simplify visualizations, only data through years 2095~2099 were used for visualizations. 
+
+**Reasons for filtering Data**<br>
+
+ - Visual Simplicity: The original dataset contains tens of thousands of rows. To achieve our goal of visualizing the data points and identifying patterns that distinguish different scenarios, we need to reduce the number of data points. Too many points would make the visualization cluttered and difficult to interpret.
+ - Amplify Correlation: As observed in the exploratory data analysis (EDA), there is a noticeable trend of rising temperatures over time. To highlight this correlation more effectively, we hypothesize that focusing on the final years of the dataset will provide a clearer and more pronounced visualization compared to earlier years.
 
 ```{python}
 #| code-summary: Import module / Set options and theme
@@ -53,11 +61,10 @@ df['Location_ID'] = df.groupby(['long', 'lat']).ngroup() + 1
 group_list = ['Park', 'long', 'lat', 'veg', 'year', 'TimePeriod', 'RCP','treecanopy', 'Ann_Herb', 'Bare', 'Herb', 'Litter', 'Shrub', 'El', 'Sa','Cl', 'RF', 'Slope', 'E', 'S']
 veg_location = df.drop(labels='scenario',axis=1).groupby(group_list).mean().reset_index()
 
-# Average Scenario Dataset
-# Convert to numeric, coercing errors to NaN
+
 numeric_series = pd.to_numeric(veg_location['RCP'], errors='coerce')
 
-# Fill NaNs with original non-numeric values
+
 veg_location['RCP'] = numeric_series.fillna(veg_location['RCP'])
 
 four = veg_location[veg_location['RCP'].isin([4.5])]
@@ -72,12 +79,8 @@ df_con['Location_ID'] = df_con.groupby(['long', 'lat']).ngroup() + 1
 
 
 # Scenario Dataset
-# Convert to numeric, coercing errors to NaN
 numeric_series = pd.to_numeric(df['RCP'], errors='coerce')
 
-numeric_series
-
-# Fill NaNs with original non-numeric values
 df['RCP'] = numeric_series.fillna(df['RCP'])
 
 four = df[df['RCP'].isin([4.5])]
@@ -119,11 +122,9 @@ selected_columns = [col for col in data_1.columns if 'summer' in col.lower()]
 dropped_columns = [col for col in data_1.columns if not 'summer' in col.lower()]
 filtered_df = data_1[selected_columns]
 
-# Get the list of columns
 columns = filtered_df.columns
 ratios = {}
 
-# Calculate the ratios
 for i, col1 in enumerate(columns):
     for col2 in columns[i+1:]:
         ratio_col_name = f"{col1}/{col2}"
@@ -134,31 +135,26 @@ ratios_df = pd.DataFrame(ratios)
 eng_45 = pd.concat([data_1[dropped_columns], ratios_df], axis=1)
 
 
-# 1: Identify columns with inf or -inf
 cols_with_inf = eng_45.iloc[:,8:].columns.to_series()[np.isinf(eng_45.iloc[:,8:]).any()]
 
-# 2: Drop those columns
 eng_45.drop(columns=cols_with_inf, inplace=True)
 eng_45.dropna(inplace=True)
 
 X = eng_45.iloc[:,list(range(8, len(eng_45.columns)-1))]
 y = eng_45.iloc[:,len(eng_45.columns)-3]
 
-# Standardize the features
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
 scaler = StandardScaler()
 y_scaled = pd.Series(scaler.fit_transform(y.values.reshape(-1,1)).flatten())
 
-# Perform t-SNE on the features
 tsne = TSNE(n_components=2, random_state=42)
 tsne_results = tsne.fit_transform(X_scaled)
 
 eng_45['tsne1'] = tsne_results[:, 0]
 eng_45['tsne2'] = tsne_results[:, 1]
 
-# Visualize the results with Plotly
 fig = px.scatter(
     eng_45,
     x='tsne1',
@@ -171,27 +167,26 @@ fig = px.scatter(
 )
 
 fig.update_layout(
-    margin=dict(l=10, r=10, b=10, t=40),  # Adjust the values as needed
+    margin=dict(l=10, r=10, b=10, t=40),  
     title_x=0.5,
     title_y=0.95,
 )
 
 fig.show()
 
-# Visualize the results with Plotly
 fig = px.scatter(
     eng_45[eng_45['scenario'].isin(['sc37','sc40'])],
     x='tsne1',
     y='tsne2',
     color='scenario',
-    title='<b>t-SNE For Scenario 60 and 58 (RCP = 4.5)</b>',
+    title='<b>t-SNE For Scenario 37 and 40 (RCP = 4.5)</b>',
     labels={'tsne1': 't-SNE1', 'tsne2': 't-SNE2'},
     opacity=0.5,
     hover_data={'Location_ID': True, 'year':True}
 )
 
 fig.update_layout(
-    margin=dict(l=10, r=10, b=10, t=40),  # Adjust the values as needed
+    margin=dict(l=10, r=10, b=10, t=40),  
     title_x=0.5,
     title_y=0.95,
 )
@@ -202,24 +197,20 @@ fig.show()
 ```{python}
 #| code-summary: 3D t-SNE (RCP = 4.5)
 
-# Identify columns with inf or -inf
 cols_with_inf = eng_45.iloc[:,8:].columns.to_series()[np.isinf(eng_45.iloc[:,8:]).any()]
 
-# Drop those columns
 eng_45.drop(columns=cols_with_inf, inplace=True)
 eng_45.dropna(inplace=True)
 
 X = eng_45.iloc[:,list(range(8, len(eng_45.columns)-1))]
 y = eng_45.iloc[:,len(eng_45.columns)-3]
 
-# Standardize the features
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
 scaler = StandardScaler()
 y_scaled = pd.Series(scaler.fit_transform(y.values.reshape(-1,1)).flatten())
 
-# Perform t-SNE on the features
 tsne = TSNE(n_components=3, random_state=42)
 tsne_results = tsne.fit_transform(X_scaled)
 
@@ -237,7 +228,7 @@ fig = px.scatter_3d(
     y='tsne2',
     z='tsne3',
     color='scenario',
-    title='<b>3D t-SNE For All Scenarios</b>',
+    title='<b>3D t-SNE For All Scenarios (RCP = 4.5)</b>',
     labels={'tsne1': 't-SNE1', 'tsne2': 't-SNE2', 'tsne3': 't-SNE3'},
     opacity=0.5,
     size_max=0.1,
@@ -245,12 +236,10 @@ fig = px.scatter_3d(
     
 )
 
-fig.update_traces(marker=dict(size=3))  # Adjust the size value as needed
+fig.update_traces(marker=dict(size=3)) 
 
-
-# Update layout to adjust padding and margins
 fig.update_layout(
-    margin=dict(l=5, r=5, b=5, t=20),  # Adjust the values as needed
+    margin=dict(l=5, r=5, b=5, t=20), 
     title_x=0.5,
     title_y=0.95,
     scene=dict(
@@ -264,14 +253,13 @@ fig.update_layout(
 )
 fig.show()
 
-# Visualize the results with Plotly in 3D
 fig = px.scatter_3d(
     eng_45[eng_45['scenario'].isin(['sc37','sc40'])],
     x='tsne1',
     y='tsne2',
     z='tsne3',
     color='scenario',
-    title='<b>3D t-SNE For Scenario 37 and 40</b>',
+    title='<b>3D t-SNE For Scenario 37 and 40 (RCP = 4.5)</b>',
     labels={'tsne1': 't-SNE1', 'tsne2': 't-SNE2', 'tsne3': 't-SNE3'},
     opacity=0.5,
     size_max=0.1,
@@ -282,7 +270,6 @@ fig = px.scatter_3d(
 fig.update_traces(marker=dict(size=3))  
 
 
-# Update layout to adjust padding and margins
 fig.update_layout(
     margin=dict(l=5, r=5, b=5, t=20),
     title_x=0.5,
@@ -311,30 +298,24 @@ We will conduct PCA on each group of RCP to find a pattern in between scenarios 
 ```{python}
 #| code-summary: PCA(RCP = 4.5)
 
-# Identify columns with inf or -inf
 cols_with_inf = eng_45.iloc[:,8:].columns.to_series()[np.isinf(eng_45.iloc[:,8:]).any()]
 
-# Drop those columns
 eng_45.drop(columns=cols_with_inf, inplace=True)
 eng_45.dropna(inplace=True)
 
 X = eng_45.iloc[:,list(range(8, len(eng_45.columns)-1))]
 y = eng_45.iloc[:,len(eng_45.columns)-3]
 
-# Standardize the features
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
-# Apply PCA
-pca = PCA(n_components=10)  # Reduce to 2 components for visualization
+pca = PCA(n_components=10)  
 X_pca = pca.fit_transform(X_scaled)
 
-# Add the PCA and cluster results to the DataFrame
 eng_45['PCA1'] = X_pca[:, 0]
 eng_45['PCA2'] = X_pca[:, 1]
 eng_45['PCA3'] = X_pca[:, 2]
 
-# Get the component loadings
 loadings = pca.components_.T
 columns = X.columns
 
@@ -347,7 +328,7 @@ cumulative_explained_variance = np.cumsum(explained_variance_ratio)
 
 ### Explained Variance
 
-**What is explained variance of PCA?**
+**What is explained variance of PCA?**<br>
 Each principal component has an associated eigenvalue that quantifies how much variance it explains. The explained variance for a principal component is the proportion of the total dataset variance that this component accounts for. If the total variance in the dataset is 100%, the first principal component might explain, for example, 40%, the second 20%, and so on.
 
 
@@ -362,10 +343,8 @@ By using the elbow method, we can assume that we need principal components 1, 2,
 ```{python}
 #| code-summary: Varience Ratio
 
-# Create a list of x-axis labels from PCA1 to PCA10
 x_labels = [f'PCA{i+1}' for i in range(len(explained_variance_ratio))]
 
-# Create a line chart for explained variance ratio
 fig = go.Figure(data=go.Scatter(
     x=x_labels,
     y=explained_variance_ratio,
@@ -374,14 +353,13 @@ fig = go.Figure(data=go.Scatter(
     textposition='top center'
 ))
 
-# Update layout for better readability
 fig.update_layout(
     title='<b>Explained Variance Ratio by Principal Components</b>',
     xaxis_title='Principal Components',
     yaxis_title='Explained Variance Ratio',
-    yaxis=dict(tickformat=".2%", range=[0, 1.1 * explained_variance_ratio.max()]),  # Adjust the range as needed
+    yaxis=dict(tickformat=".2%", range=[0, 1.1 * explained_variance_ratio.max()]),  
     template='plotly_white',
-    margin=dict(l=50, r=50, b=50, t=50)  # Adjust the padding as needed
+    margin=dict(l=50, r=50, b=50, t=50)  
 )
 
 fig.show()
@@ -393,23 +371,18 @@ In order to interpret visualizations made from principle components, we need to 
 ```{python}
 #| code-summary: Feature Importance Plots
 
-# Sort the features by the absolute value of the loading for PCA1
 sorted_loadings = loadings_df['PCA1'].abs().sort_values(ascending=False)
 
-# Get the top 10 most influential features
 top_features = sorted_loadings.head(20).index
 
-# Get the actual loadings for these top 10 features
 top_loadings = round(loadings_df.loc[top_features, 'PCA1'],4)
 
-# Create a color list based on the sign of the loadings
 colors = ['blue' if val > 0 else 'red' for val in top_loadings]
 
-# Create a bar chart
 fig = go.Figure(data=[go.Bar(
     x=top_loadings.index,
     y=top_loadings.abs(),
-    text=top_loadings.values,  # Show the actual values as text
+    text=top_loadings.values,  
     textposition='inside',
     marker_color=colors,
     showlegend=False
@@ -429,7 +402,6 @@ fig.add_trace(go.Bar(
     name='Negative'
 ))
 
-# Update layout for better readability
 fig.update_layout(
     title='<b>Top 20 Most Influential Features on PCA1</b>',
     xaxis_title='Features',
@@ -449,29 +421,25 @@ fig.update_layout(
 
 fig.show()
 
-# Sort the features by the absolute value of the loading for PCA1
+
+
 sorted_loadings = loadings_df['PCA2'].abs().sort_values(ascending=False)
 
-# Get the top 10 most influential features
 top_features = sorted_loadings.head(20).index
 
-# Get the actual loadings for these top 10 features
 top_loadings = round(loadings_df.loc[top_features, 'PCA2'],4)
 
-# Create a color list based on the sign of the loadings
 colors = ['blue' if val > 0 else 'red' for val in top_loadings]
 
-# Create a bar chart
 fig = go.Figure(data=[go.Bar(
     x=top_loadings.index,
     y=top_loadings.abs(),
-    text=top_loadings.values,  # Show the actual values as text
+    text=top_loadings.values,  
     textposition='inside',
     marker_color=colors,
     showlegend=False
 )])
 
-# Add legend manually
 fig.add_trace(go.Bar(
     x=[None], y=[None],
     marker=dict(color='blue'),
@@ -485,7 +453,6 @@ fig.add_trace(go.Bar(
     name='Negative'
 ))
 
-# Update layout for better readability
 fig.update_layout(
     title='<b>Top 20 Most Influential Features on PCA2</b>',
     xaxis_title='Features',
@@ -505,29 +472,26 @@ fig.update_layout(
 
 fig.show()
 
-# Sort the features by the absolute value of the loading for PCA1
+
+
 sorted_loadings = loadings_df['PCA3'].abs().sort_values(ascending=False)
 
-# Get the top 10 most influential features
 top_features = sorted_loadings.head(20).index
 
-# Get the actual loadings for these top 10 features
 top_loadings = round(loadings_df.loc[top_features, 'PCA3'],4)
 
-# Create a color list based on the sign of the loadings
 colors = ['blue' if val > 0 else 'red' for val in top_loadings]
 
 # Create a bar chart
 fig = go.Figure(data=[go.Bar(
     x=top_loadings.index,
     y=top_loadings.abs(),
-    text=top_loadings.values,  # Show the actual values as text
+    text=top_loadings.values, 
     textposition='inside',
     marker_color=colors,
     showlegend=False
 )])
 
-# Add legend manually
 fig.add_trace(go.Bar(
     x=[None], y=[None],
     marker=dict(color='blue'),
@@ -541,7 +505,6 @@ fig.add_trace(go.Bar(
     name='Negative'
 ))
 
-# Update layout for better readability
 fig.update_layout(
     title='<b>Top 20 Most Influential Features on PCA3</b>',
     xaxis_title='Features',
@@ -567,7 +530,6 @@ fig.show()
 ```{python}
 #| code-summary: 2D PCA Plots
 
-# Visualize the results with Plotly
 fig = px.scatter(
     eng_45,
     x='PCA1',
@@ -579,7 +541,7 @@ fig = px.scatter(
 )
 
 fig.update_layout(
-    margin=dict(l=10, r=10, b=10, t=40),  # Adjust the values as needed
+    margin=dict(l=10, r=10, b=10, t=40),  
     title_x=0.5,
     title_y=0.95,
 )
@@ -597,7 +559,7 @@ fig = px.scatter(
 )
 
 fig.update_layout(
-    margin=dict(l=10, r=10, b=10, t=40),  # Adjust the values as needed
+    margin=dict(l=10, r=10, b=10, t=40),
     title_x=0.5,
     title_y=0.95,
 )
@@ -607,7 +569,7 @@ fig.show()
 
 When conducting a 2D PCA analysis for all scenarios, the overall trend indicates that within each scenario, PCA1 primarily influences the data points. In contrast, between different scenarios, PCA2 is the key differentiator.
 
-*What does that mean?*<br>
+**What does that mean?**<br>
 Similar to our t-SNE analysis, the original features that effect PCA1 are the original features that were not engineered. It makes sense to think that these variables create variance within datapoints within the same scenario.
 
 Also similar to the t-SNE, it seems PCA2 consists of engineered features and acts as a component that differentiates different scenarios. Even the highly ranked features that correlate with PCA2 are features with VWC in the denominator and PPT or Transp in the nominator similar to our t-SNE results.
@@ -623,7 +585,6 @@ What type of information can we retrieve from the third PCA that we couldn't fro
 ```{python}
 #| code-summary: 3D PCA Plots
 
-# Visualize the results with Plotly in 3D
 fig = px.scatter_3d(
     eng_45,
     x='PCA1',
@@ -640,7 +601,6 @@ fig = px.scatter_3d(
 fig.update_traces(marker=dict(size=3))
 
 
-# Update layout to adjust padding and margins
 fig.update_layout(
     margin=dict(l=5, r=5, b=5, t=20),
     title_x=0.5,
@@ -672,7 +632,6 @@ fig = px.scatter_3d(
 fig.update_traces(marker=dict(size=3)) 
 
 
-# Update layout to adjust padding and margins
 fig.update_layout(
     margin=dict(l=5, r=5, b=5, t=20),
     title_x=0.5,
@@ -695,6 +654,6 @@ By looking at both the plot with all the scenarios and the plot with the two sce
 When looking at the plot with only the two scenarios, although we do see a clear distinciton, its a little harder to interpret because the two scenarios are not in different quadrants. What makes it even harder to analyze is that scenario 40 is clustered around the center where PCA1 and PCA2 are both equal to one and scenario 37 is scaterred around the center in quadrant 2 and 4. Although the scenarios are divided, its hard to make an analysis of feature relevance to annual temperature.
 
 # Conclusion
-Regardless of our efforts to visualize and fine patterns between the scenarios with two different dimensionality reduciton methods, it was difficult to find a pattern, however we were able to find similarities between the RCP 8.5 scenario that the engineered features acted as a way to separate scenarios whereas the original features acted as a way to generate various points within a scenario.
+Regardless of our efforts to visualize and fine patterns between the scenarios with two different dimensionality reduciton methods, it was difficult to find a interpretable pattern. However, we were able to find similarities between the RCP 8.5 scenario that the engineered features acted as a way to separate scenarios whereas the original features acted as a way to generate various points within a scenario.
 
 

@@ -9,7 +9,7 @@
 <meta name="author" content="JaeHo Bahng">
 <meta name="dcterms.date" content="2024-05-19">
 
-<title>Coverage Prediction - Dataset Cleaning</title>
+<title>Natural Bridges Temperature Prediction - Dataset Cleaning</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -513,7 +513,7 @@ Filtered Original Dataset shape :  (55802, 29)</code></pre>
 </section>
 <section id="conclusion" class="level2">
 <h2 class="anchored" data-anchor-id="conclusion">Conclusion</h2>
-<p>Since the clean data was adding two filters to the original dataset, I decided to clean the original dataset to extract as much information as possible.</p>
+<p>Since the clean data was adding two filters to the original dataset, the original dataset was cleaned to extract as much information as possible instead of using the given clean dataset.</p>
 <hr>
 </section>
 </section>
@@ -1319,21 +1319,18 @@ Filtered Original Dataset shape :  (55802, 29)</code></pre>
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Columns to exclude</span></span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>cols_to_exclude <span class="op">=</span> [<span class="st">'PPT_Annual'</span>, <span class="st">'T_Annual'</span>]</span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a boolean mask for columns to keep</span></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>mask <span class="op">=</span> df.columns.isin(cols_to_exclude)</span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Use loc to select all rows and only the columns not in the mask</span></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>new_df <span class="op">=</span> df.loc[:, <span class="op">~</span>mask]</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>mask <span class="op">=</span> df.columns.isin(cols_to_exclude)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>new_df <span class="op">=</span> df.loc[:, <span class="op">~</span>mask]</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>test <span class="op">=</span> new_df.drop_duplicates()</span>
 <span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>test <span class="op">=</span> new_df.drop_duplicates()</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>number <span class="op">=</span> test.groupby([<span class="st">'veg'</span>,<span class="st">'year'</span>,<span class="st">'long'</span>,<span class="st">'lat'</span>,<span class="st">'scenario'</span>]).size().reset_index()</span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>number.rename({<span class="dv">0</span>:<span class="st">'Size'</span>},axis<span class="op">=</span><span class="dv">1</span>,inplace<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="co"># number[number['Size'] &gt; 2]</span></span>
-<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>test[<span class="st">'PPT_Annual'</span>] <span class="op">=</span> test[<span class="st">'PPT_Winter'</span>] <span class="op">+</span> test[<span class="st">'PPT_Spring'</span>] <span class="op">+</span> test[<span class="st">'PPT_Summer'</span>] <span class="op">+</span> test[<span class="st">'PPT_Fall'</span>]</span>
-<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>test[<span class="st">'T_Annual'</span>] <span class="op">=</span> (test[<span class="st">'T_Winter'</span>] <span class="op">+</span> test[<span class="st">'T_Spring'</span>] <span class="op">+</span> test[<span class="st">'T_Summer'</span>] <span class="op">+</span> test[<span class="st">'T_Fall'</span>])<span class="op">/</span><span class="dv">4</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>number <span class="op">=</span> test.groupby([<span class="st">'veg'</span>,<span class="st">'year'</span>,<span class="st">'long'</span>,<span class="st">'lat'</span>,<span class="st">'scenario'</span>]).size().reset_index()</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>number.rename({<span class="dv">0</span>:<span class="st">'Size'</span>},axis<span class="op">=</span><span class="dv">1</span>,inplace<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>test[<span class="st">'PPT_Annual'</span>] <span class="op">=</span> test[<span class="st">'PPT_Winter'</span>] <span class="op">+</span> test[<span class="st">'PPT_Spring'</span>] <span class="op">+</span> test[<span class="st">'PPT_Summer'</span>] <span class="op">+</span> test[<span class="st">'PPT_Fall'</span>]</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>test[<span class="st">'T_Annual'</span>] <span class="op">=</span> (test[<span class="st">'T_Winter'</span>] <span class="op">+</span> test[<span class="st">'T_Spring'</span>] <span class="op">+</span> test[<span class="st">'T_Summer'</span>] <span class="op">+</span> test[<span class="st">'T_Fall'</span>])<span class="op">/</span><span class="dv">4</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 </section>
@@ -2587,9 +2584,9 @@ Filtered Original Dataset shape :  (55802, 29)</code></pre>
 </div>
 </div>
 </div>
-<div class="cell" data-execution_count="29">
+<div class="cell" data-execution_count="45">
 <details>
-<summary>Data Cleaning</summary>
+<summary>After Cleaning</summary>
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>a <span class="op">=</span> test.drop(<span class="st">'RL'</span>, axis<span class="op">=</span><span class="dv">1</span>)</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>merged_df <span class="op">=</span> a.groupby(<span class="bu">list</span>(a.columns[<span class="dv">0</span>:<span class="dv">21</span>]), as_index<span class="op">=</span><span class="va">False</span>).agg(<span class="kw">lambda</span> x: <span class="bu">next</span>(<span class="bu">iter</span>(x.dropna()), np.nan))</span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -2597,13 +2594,9 @@ Filtered Original Dataset shape :  (55802, 29)</code></pre>
 <span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>merged_df <span class="op">=</span> pd.merge(merged_df, rl, on<span class="op">=</span>[<span class="st">'veg'</span>, <span class="st">'year'</span>, <span class="st">'long'</span>, <span class="st">'lat'</span>, <span class="st">'scenario'</span>], how<span class="op">=</span><span class="st">'inner'</span>)</span>
 <span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Original dataset rows with RL removed : "</span>, merged_df.shape[<span class="dv">0</span>])</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"RL grouped and averaged by identifiers : "</span>, rl.shape[<span class="dv">0</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-</div>
-<div class="cell" data-execution_count="45">
-<details>
-<summary>After Cleaning</summary>
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>merged_df.head()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"RL grouped and averaged by identifiers : "</span>, rl.shape[<span class="dv">0</span>])</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>merged_df.head()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-display" data-execution_count="45">
 <div>
@@ -3282,7 +3275,7 @@ Filtered Original Dataset shape :  (55802, 29)</code></pre>
 <div class="cell" data-execution_count="35">
 <details>
 <summary>Output to CSV</summary>
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># merged_df.to_csv('../data/cleaned_df.csv', index=False)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># merged_df.to_csv('../data/cleaned_df.csv', index=False)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 

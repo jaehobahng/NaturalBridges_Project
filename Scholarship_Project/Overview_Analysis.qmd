@@ -58,13 +58,8 @@ df['Location_ID'] = df.groupby(['long', 'lat']).ngroup() + 1
 group_list = ['Park', 'long', 'lat', 'veg', 'year', 'TimePeriod', 'RCP','treecanopy', 'Ann_Herb', 'Bare', 'Herb', 'Litter', 'Shrub', 'El', 'Sa','Cl', 'RF', 'Slope', 'E', 'S']
 veg_location = df.drop(labels='scenario',axis=1).groupby(group_list).mean().reset_index()
 
-# Average Scenario Dataset
-# Convert to numeric, coercing errors to NaN
 numeric_series = pd.to_numeric(veg_location['RCP'], errors='coerce')
 
-numeric_series
-
-# Fill NaNs with original non-numeric values
 veg_location['RCP'] = numeric_series.fillna(veg_location['RCP'])
 
 four = veg_location[veg_location['RCP'].isin([4.5])]
@@ -78,13 +73,14 @@ df_con = pd.concat([four_h, four, eight_h, eight], ignore_index=True)
 df_con['Location_ID'] = df_con.groupby(['long', 'lat']).ngroup() + 1
 
 
-# Scenario Dataset
-# Convert to numeric, coercing errors to NaN
+
+
+
 numeric_series = pd.to_numeric(df['RCP'], errors='coerce')
 
 numeric_series
 
-# Fill NaNs with original non-numeric values
+
 df['RCP'] = numeric_series.fillna(df['RCP'])
 
 four = df[df['RCP'].isin([4.5])]
@@ -126,10 +122,8 @@ rcp_values = test['RCP'].unique()
 
 subplot_titles = [f'RCP {rcp}' for rcp in rcp_values]
 
-# Create figure with subplots for each RCP value
 fig = make_subplots(rows=1, cols=len(rcp_values), shared_yaxes=True, subplot_titles=subplot_titles, horizontal_spacing=0.15)
 
-# Add a scatter trace for each color column and each RCP value
 for i, col in enumerate(color_columns):
     for j, rcp in enumerate(rcp_values):
         fig.add_trace(
@@ -163,7 +157,7 @@ for i, col in enumerate(color_columns):
             row=1, col=j+1
         )
 
-# Updating the layout to add the title
+
 fig.update_layout(
     title={
         'text': '<b>Annual Precipitation vs Temperature by RCP Scenarios</b>',
@@ -171,11 +165,10 @@ fig.update_layout(
         'y': 0.97,
         'xanchor': 'center'
     },
-    # title_font=dict(size=20),
     showlegend=False
 )
 
-# Adding dropdown filter to change visible trace
+
 dropdown_buttons = [
     {
         'label': col,
@@ -240,10 +233,8 @@ fig = px.scatter(df_con[df_con['year'].isin(range(2060,2099))], x="PPT_Annual", 
 fig.update_layout(
     title={
         'text': f'<b>Annual Precipitation/Temperature ({feature})</b>',
-        # 'y':0.95,  # This adjusts the position of the title (vertically)
-        'x':0.5,   # Centers the title horizontally
-        'xanchor': 'center',  
-        # 'yanchor': 'top'
+        'x':0.5,  
+        'xanchor': 'center'
     },
     title_font=dict(size=20)  
 )
@@ -259,10 +250,8 @@ fig = px.scatter(df_con[df_con['year'].isin(range(2060,2099))], x="PPT_Annual", 
 fig.update_layout(
     title={
         'text': f'<b>Annual Precipitation/Temperature ({feature})</b>',
-        # 'y':0.95,  # This adjusts the position of the title (vertically)
-        'x':0.5,   # Centers the title horizontally
-        'xanchor': 'center',  
-        # 'yanchor': 'top' 
+        'x':0.5,  
+        'xanchor': 'center' 
     },
     title_font=dict(size=20)
 )
@@ -278,10 +267,25 @@ fig = px.scatter(df_con[df_con['year'].isin(range(2060,2099))], x="PPT_Annual", 
 fig.update_layout(
     title={
         'text': f'<b>Annual Precipitation/Temperature ({feature})</b>',
-        # 'y':0.95,  # This adjusts the position of the title (vertically)
-        'x':0.5,   # Centers the title horizontally
+        'x':0.5, 
+        'xanchor': 'center'  
+    },
+    title_font=dict(size=20)
+)
+
+fig.show()
+
+feature = 'Bare'
+fig = px.scatter(df_con[df_con['year'].isin(range(2060,2099))], x="PPT_Annual", y="T_Annual",
+                 color=feature, facet_col="RCP",     
+                 labels={
+        feature: 'Scale' 
+    })
+fig.update_layout(
+    title={
+        'text': f'<b>Annual Precipitation/Temperature ({feature})</b>',
+        'x':0.5, 
         'xanchor': 'center',  
-        # 'yanchor': 'top' 
     },
     title_font=dict(size=20)
 )
@@ -315,11 +319,8 @@ While these factors cannot be directly influenced, some takeaways from the plot 
 ```{python}
 #| code-summary: Correlation Heatmap
 
-# Calculate the correlation matrix
 corr_matrix = df_orig[(df_orig['TimePeriod']!='Hist') & (df_orig['RCP']==4.5)].iloc[:,8:].corr()
 
-
-# Create an interactive heatmap of the correlation matrix
 fig = px.imshow(corr_matrix,
                 # text_auto=True,
                 labels=dict(color="Correlation"),
@@ -335,8 +336,8 @@ fig.update_layout(
 )
 
 
-fig.update_layout(title_text='<b>Future Correlation Heatmap : RCP 4.5</b>',  # Bold text using HTML
-                  title_x=0.5)  # Centers the title by setting the x position to 0.5
+fig.update_layout(title_text='<b>Future Correlation Heatmap : RCP 4.5</b>', 
+                  title_x=0.5)
 
 fig.update_xaxes(tickfont=dict(size=10))  
 fig.update_yaxes(tickfont=dict(size=10))
@@ -353,7 +354,6 @@ top_features = sorted_loadings.head(20).index
 
 top_loadings = round(corr_matrix['T_Annual'].loc[top_features,],4)[1:]
 
-# Create a color list based on the sign of the loadings
 colors = ['blue' if val > 0 else 'red' for val in top_loadings]
 
 
@@ -366,7 +366,6 @@ fig = go.Figure(data=[go.Bar(
     showlegend=False
 )])
 
-# Add legend manually
 fig.add_trace(go.Bar(
     x=[None], y=[None],
     marker=dict(color='blue'),
@@ -380,7 +379,6 @@ fig.add_trace(go.Bar(
     name='Negative'
 ))
 
-# Update layout for better readability
 fig.update_layout(
     title='<b>Top Features Correlating to Annual Temperature (RCP = 4.5)</b>',
     xaxis_title='Features',
@@ -434,18 +432,15 @@ With the knowledge that 8.5 means higher CO2 emission as mentioned in the EDA ta
 ```{python}
 #| code-summary: Correlation Heatmap
 
-# Calculate the correlation matrix
 corr_matrix = df_orig[(df_orig['TimePeriod']!='Hist') & (df_orig['RCP']==8.5)].iloc[:,8:].corr()
 
 
-# Create an interactive heatmap of the correlation matrix
 fig = px.imshow(corr_matrix,
-                # text_auto=True, 
                 labels=dict(color="Correlation"),
                 x=corr_matrix.columns,
                 y=corr_matrix.columns,
                 color_continuous_scale='RdBu_r'
-  )  # Red-Blue color map, reversed
+  )  
 
 fig.update_layout(
     width=800, 
@@ -474,7 +469,6 @@ top_loadings = round(corr_matrix['T_Annual'].loc[top_features,],4)[1:]
 
 colors = ['blue' if val > 0 else 'red' for val in top_loadings]
 
-# Create a bar chart
 fig = go.Figure(data=[go.Bar(
     x=top_loadings.index,
     y=top_loadings.abs(),
@@ -484,7 +478,6 @@ fig = go.Figure(data=[go.Bar(
     showlegend=False
 )])
 
-# Add legend manually
 fig.add_trace(go.Bar(
     x=[None], y=[None],
     marker=dict(color='blue'),
@@ -499,7 +492,7 @@ fig.add_trace(go.Bar(
 ))
 
 fig.update_layout(
-    title='<b>Top Features Correlating to Annual Temperature</b>',
+    title='<b>Top Features Correlating to Annual Temperature(RCP = 8.5)</b>',
     xaxis_title='Features',
     yaxis_title='Absolute PCA1 Loadings',
     yaxis=dict(tickformat=".2f"),
@@ -540,21 +533,16 @@ df_85 = df_orig[df_orig['RCP'] == 8.5]
 df1 = df_45.iloc[:,8:-3]
 df2 = df_85.iloc[:,8:-3]
 
-# Function to calculate z-scores
 def standardize(df):
     return df.apply(zscore)
 
-# Standardize both dataframes
 z_df1 = standardize(df1)
 z_df2 = standardize(df2)
 
-# Calculate Absolute Difference of Z-Scores
 abs_diff_z_scores = np.abs(z_df1 - z_df2)
 
-# Mean Absolute Difference
 mean_abs_diff = abs_diff_z_scores.mean()
 
-# RMSE
 rmse = np.sqrt(np.mean((z_df1.reset_index(drop=True) - z_df2.reset_index(drop=True))**2, axis=0))
 
 rmse_sort = rmse.sort_values(ascending=False).head(20)
@@ -564,7 +552,6 @@ fig = go.Figure(data=[go.Bar(
     y=rmse_sort.values,
     text=[round(i,4) for i in rmse_sort.values], 
     textposition='inside',
-    # marker_color=colors,
     showlegend=False
 )])
 

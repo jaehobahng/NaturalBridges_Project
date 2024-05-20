@@ -68,12 +68,10 @@ The Average Scenarios dataset averages all the numerical columns of the scenario
 group_list = ['Park', 'long', 'lat', 'veg', 'year', 'TimePeriod', 'RCP','treecanopy', 'Ann_Herb', 'Bare', 'Herb', 'Litter', 'Shrub', 'El', 'Sa','Cl', 'RF', 'Slope', 'E', 'S']
 veg_location = df.drop(labels='scenario',axis=1).groupby(group_list).mean().reset_index()
 
-# Convert to numeric, coercing errors to NaN
 numeric_series = pd.to_numeric(veg_location['RCP'], errors='coerce')
 
 numeric_series
 
-# Fill NaNs with original non-numeric values
 veg_location['RCP'] = numeric_series.fillna(veg_location['RCP'])
 
 four = veg_location[veg_location['RCP'].isin([4.5])]
@@ -92,6 +90,7 @@ df_con.head(5)
 ## All Scenarios
 
 ```{python}
+#| code-summary: Clean Data(All Scenarios)
 #| vscode: {languageId: python}
 numeric_series = pd.to_numeric(df['RCP'], errors='coerce')
 
@@ -202,7 +201,6 @@ fig.update_layout(
 )
 fig.update_traces(marker=dict(size=10))
 
-# Show the figure
 fig.show()
 ```
 
@@ -260,15 +258,13 @@ fig.add_annotation(
 )
 
 fig.update_layout(title={'x':0.5})
-# Show the plot
 fig.show()
 
 
-# Assuming 'veg_location' is your DataFrame
-# Filter the DataFrame for 'RCP' values 'historical' and 4.5
+
 filtered_data = df_con.groupby(['year'])['PPT_Annual'].mean().reset_index()
 
-# Create the line plot
+
 fig = px.line(
     data_frame=filtered_data,
     x='year',
@@ -388,7 +384,6 @@ Since RCP deals with CO2 emission and the 8.5 scenario has a higher emission pre
 #| vscode: {languageId: python}
 
 
-# Filter the DataFrame for 'RCP' values 'historical' and 4.5
 filtered_data = df_con[df_con['RCP'].isin(['historical', 4.5])].groupby(['year','veg'])['T_Annual'].mean().reset_index()
 
 fig = px.line(
@@ -402,7 +397,6 @@ fig = px.line(
 fig.update_layout(title={'x':0.5})
 
 
-# Add a vertical line at year 2021
 fig.add_shape(
     dict(
         type='line',
@@ -474,7 +468,8 @@ Since we already know that RCP plays a big role in how the algorithm predicts th
 
 Before we start analyzing our dataset, one final step we want to take is proving the statistical significance in the different scenarios we plan on comparing.
 
-The three comparisons we plan on making are as follows:
+**The three comparisons we plan on making are as follows:**
+
 1. RCP 8.5(High) vs RCP 4.5(Low)
 2. RCP 4.5 : Scenario 37(High) vs Scenario 40(Low)
 2. RCP 8.5 : Scenario 60(High) vs Scenario 58(Low)
@@ -483,12 +478,9 @@ The three comparisons we plan on making are as follows:
 #| code-summary: T-test for RCP 4.5 and 8.8
 #| vscode: {languageId: python}
 
- 
-# Creating data groups
 data_before = df_orig[(df_orig['RCP'] == 8.5) & (df_orig['TimePeriod'] != 'Hist')]['T_Annual']
 data_after = df_orig[(df_orig['RCP'] == 4.5) & (df_orig['TimePeriod'] != 'Hist')]['T_Annual']
  
-# Conducting two-sample ttest
 result = pg.ttest(data_before,
                   data_after,
                   correction=True)
@@ -508,11 +500,9 @@ Result                          | Value          |
 #| vscode: {languageId: python}
 
  
-# Creating data groups
 data_before = df_orig[df_orig['scenario'] == 'sc40']['T_Annual']
 data_after = df_orig[df_orig['scenario'] == 'sc37']['T_Annual']
  
-# Conducting two-sample ttest
 result = pg.ttest(data_before,
                   data_after,
                   correction=True)
@@ -531,11 +521,9 @@ Result                          | Value          |
 #| code-summary: T-test for Scenario 60 vs 58
 #| vscode: {languageId: python}
 
-# Creating data groups
 data_before = df_orig[df_orig['scenario'] == 'sc60']['T_Annual']
 data_after = df_orig[df_orig['scenario'] == 'sc58']['T_Annual']
  
-# Conducting two-sample ttest
 result = pg.ttest(data_before,
                   data_after,
                   correction=True)

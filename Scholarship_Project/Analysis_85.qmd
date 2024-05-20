@@ -14,8 +14,17 @@ jupyter: python3
 
 Now we'll conduct a more detailed comparison within each RCP scenario(4.5, 8.5) to analyze how the highest temperature scenario and lowest temperature scenario within each group is similar or different.
 
-**Methodology**<br>
+### Methodology
 We will use t-SNE with pearson correlation to visualize these datapoints onto 2D and 3D planes to check if we can visually distinguish between the different scenarios. Then, we will use the original feature's influence on the generated components to hypothesize what features effect the annual temperature the most.
+
+### Data Filtering
+In order to extract an amplified version of correlations, and to simplify visualizations, only data through years 2095~2099 were used for visualizations. 
+
+**Reasons for filtering Data**<br>
+
+ - Visual Simplicity: The original dataset contains tens of thousands of rows. To achieve our goal of visualizing the data points and identifying patterns that distinguish different scenarios, we need to reduce the number of data points. Too many points would make the visualization cluttered and difficult to interpret.
+ - Amplify Correlation: As observed in the exploratory data analysis (EDA), there is a noticeable trend of rising temperatures over time. To highlight this correlation more effectively, we hypothesize that focusing on the final years of the dataset will provide a clearer and more pronounced visualization compared to earlier years.
+
 
 ```{python}
 #| code-summary: Import module / Set options and theme
@@ -39,6 +48,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.manifold import TSNE
 
 warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore", category=DeprecationWarning, message=".*plotly.graph_objs.Line.*")
+
 
 pd.set_option('display.max_columns', None)
 pd.set_option('display.precision', 10)
@@ -53,14 +64,9 @@ df['Location_ID'] = df.groupby(['long', 'lat']).ngroup() + 1
 
 group_list = ['Park', 'long', 'lat', 'veg', 'year', 'TimePeriod', 'RCP','treecanopy', 'Ann_Herb', 'Bare', 'Herb', 'Litter', 'Shrub', 'El', 'Sa','Cl', 'RF', 'Slope', 'E', 'S']
 veg_location = df.drop(labels='scenario',axis=1).groupby(group_list).mean().reset_index()
-# veg_location['T_Annual'] = (veg_location['T_Annual'] - veg_location['T_Annual'].min()) / (veg_location['T_Annual'].max() - veg_location['T_Annual'].min())
 
-
-# Average Scenario Dataset
-# Convert to numeric, coercing errors to NaN
 numeric_series = pd.to_numeric(veg_location['RCP'], errors='coerce')
 
-# Fill NaNs with original non-numeric values
 veg_location['RCP'] = numeric_series.fillna(veg_location['RCP'])
 
 four = veg_location[veg_location['RCP'].isin([4.5])]
@@ -75,12 +81,8 @@ df_con['Location_ID'] = df_con.groupby(['long', 'lat']).ngroup() + 1
 
 
 # Scenario Dataset
-# Convert to numeric, coercing errors to NaN
 numeric_series = pd.to_numeric(df['RCP'], errors='coerce')
 
-numeric_series
-
-# Fill NaNs with original non-numeric values
 df['RCP'] = numeric_series.fillna(df['RCP'])
 
 four = df[df['RCP'].isin([4.5])]
@@ -126,21 +128,18 @@ data_85 = df_orig[(df_orig['RCP']==8.5) & (df_orig['year'].isin(range(2095,2100)
 X = data_85.iloc[:,list(range(1, 3))+ list(range(8, len(data_85.columns)-3))]
 y = data_85.iloc[:,len(data_85.columns)-3]
 
-# Standardize the features
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
 scaler = StandardScaler()
 y_scaled = pd.Series(scaler.fit_transform(y.values.reshape(-1,1)).flatten())
 
-# Perform t-SNE on the features
 tsne = TSNE(n_components=2, random_state=42)
 tsne_results = tsne.fit_transform(X_scaled)
 
 data_85['tsne1'] = tsne_results[:, 0]
 data_85['tsne2'] = tsne_results[:, 1]
 
-# Visualize the results with Plotly
 fig = px.scatter(
     data_85,
     x='tsne1',
@@ -160,7 +159,6 @@ fig.update_layout(
 
 fig.show()
 
-# Visualize the results with Plotly
 fig = px.scatter(
     data_85[data_85['scenario'].isin(['sc60','sc58'])],
     x='tsne1',
@@ -195,7 +193,6 @@ top_features_1 = sorted_loadings_1.head(20).index
 top_loadings_1 = round(corr_matrix['tsne2'].loc[top_features_1,],4)[1:]
 colors_1 = ['blue' if val > 0 else 'red' for val in top_loadings_1]
 
-# Create a bar chart
 fig = go.Figure(data=[go.Bar(
     x=top_loadings_1.index,
     y=top_loadings_1.abs(),
@@ -205,7 +202,6 @@ fig = go.Figure(data=[go.Bar(
     showlegend=False
 )])
 
-# Add legend manually
 fig.add_trace(go.Bar(
     x=[None], y=[None],
     marker=dict(color='blue'),
@@ -219,7 +215,6 @@ fig.add_trace(go.Bar(
     name='Negative'
 ))
 
-# Update layout for better readability
 fig.update_layout(
     title='<b>Top Features Correlating to t-SNE2</b>',
     xaxis_title='Features',
@@ -265,11 +260,9 @@ selected_columns = [col for col in data_1.columns if 'summer' in col.lower()]
 dropped_columns = [col for col in data_1.columns if not 'summer' in col.lower()]
 filtered_df = data_1[selected_columns]
 
-# Get the list of columns
 columns = filtered_df.columns
 ratios = {}
 
-# Calculate the ratios
 for i, col1 in enumerate(columns):
     for col2 in columns[i+1:]:
         ratio_col_name = f"{col1}/{col2}"
@@ -298,21 +291,18 @@ eng_85.dropna(inplace=True)
 X = eng_85.iloc[:,list(range(8, len(eng_85.columns)-1))]
 y = eng_85.iloc[:,len(eng_85.columns)-3]
 
-# Standardize the features
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
 scaler = StandardScaler()
 y_scaled = pd.Series(scaler.fit_transform(y.values.reshape(-1,1)).flatten())
 
-# Perform t-SNE on the features
 tsne = TSNE(n_components=2, random_state=42)
 tsne_results = tsne.fit_transform(X_scaled)
 
 eng_85['tsne1'] = tsne_results[:, 0]
 eng_85['tsne2'] = tsne_results[:, 1]
 
-# Visualize the results with Plotly
 fig = px.scatter(
     eng_85,
     x='tsne1',
@@ -361,13 +351,11 @@ Through the 2D plot with only scenarios 60 and 58, we can see that t-SNE has bec
 
 corr_matrix = eng_85.iloc[:,8:].corr()
 
-# Sort the features by the absolute value of the loading for PCA1
 sorted_loadings_1 = corr_matrix['tsne1'].abs().sort_values(ascending=False)
 top_features_1 = sorted_loadings_1.head(20).index
 top_loadings_1 = round(corr_matrix['tsne1'].loc[top_features_1,],4)[1:]
 colors_1 = ['blue' if val > 0 else 'red' for val in top_loadings_1]
 
-# Sort the features by the absolute value of the loading for PCA1
 sorted_loadings_2 = corr_matrix['tsne2'].abs().sort_values(ascending=False)
 top_features_2 = sorted_loadings_2.head(20).index
 top_loadings_2 = round(corr_matrix['tsne2'].loc[top_features_2,],4)[1:]
@@ -382,7 +370,6 @@ fig = go.Figure(data=[go.Bar(
     showlegend=False
 )])
 
-# Add legend manually
 fig.add_trace(go.Bar(
     x=[None], y=[None],
     marker=dict(color='blue'),
@@ -418,7 +405,6 @@ fig.update_layout(
 
 fig.show()
 
-# Create a bar chart
 fig = go.Figure(data=[go.Bar(
     x=top_loadings_2.index,
     y=top_loadings_2.abs(),
@@ -428,7 +414,6 @@ fig = go.Figure(data=[go.Bar(
     showlegend=False
 )])
 
-# Add legend manually
 fig.add_trace(go.Bar(
     x=[None], y=[None],
     marker=dict(color='blue'),
@@ -492,14 +477,12 @@ eng_85.dropna(inplace=True)
 X = eng_85.iloc[:,list(range(8, len(eng_85.columns)-1))]
 y = eng_85.iloc[:,len(eng_85.columns)-3]
 
-# Standardize the features
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
 scaler = StandardScaler()
 y_scaled = pd.Series(scaler.fit_transform(y.values.reshape(-1,1)).flatten())
 
-# Perform t-SNE on the features
 tsne = TSNE(n_components=3, random_state=42)
 tsne_results = tsne.fit_transform(X_scaled)
 
@@ -528,7 +511,6 @@ fig = px.scatter_3d(
 
 fig.update_traces(marker=dict(size=3))  
 
-# Update layout to adjust padding and margins
 fig.update_layout(
     margin=dict(l=5, r=5, b=5, t=20), 
     title_x=0.5,
@@ -544,7 +526,6 @@ fig.update_layout(
 )
 fig.show()
 
-# Visualize the results with Plotly in 3D
 fig = px.scatter_3d(
     eng_85[eng_85['scenario'].isin(['sc60','sc58'])],
     x='tsne1',
@@ -561,8 +542,6 @@ fig = px.scatter_3d(
 
 fig.update_traces(marker=dict(size=3)) 
 
-
-# Update layout to adjust padding and margins
 fig.update_layout(
     margin=dict(l=5, r=5, b=5, t=20), 
     title_x=0.5,
@@ -587,8 +566,6 @@ Although t-SNE3 was not a valid feature for dividing the scenarios, its inclusio
 
 corr_matrix = eng_85.iloc[:,8:].corr()
 
-
-# Sort the features by the absolute value of the loading for PCA1
 sorted_loadings_3 = corr_matrix['tsne3'].abs().sort_values(ascending=False)
 top_features_3 = sorted_loadings_3.head(20).index
 top_loadings_3 = round(corr_matrix['tsne3'].loc[top_features_3,],4)[1:]
@@ -614,7 +591,6 @@ fig = go.Figure(data=[go.Bar(
     showlegend=False
 )])
 
-# Add legend manually
 fig.add_trace(go.Bar(
     x=[None], y=[None],
     marker=dict(color='blue'),
@@ -628,7 +604,6 @@ fig.add_trace(go.Bar(
     name='Negative'
 ))
 
-# Update layout for better readability
 fig.update_layout(
     title='<b>Top Features Correlating to t-SNE1</b>',
     xaxis_title='Features',
@@ -651,7 +626,6 @@ fig.update_layout(
 
 fig.show()
 
-# Create a bar chart
 fig = go.Figure(data=[go.Bar(
     x=top_loadings_2.index,
     y=top_loadings_2.abs(),
@@ -661,7 +635,6 @@ fig = go.Figure(data=[go.Bar(
     showlegend=False
 )])
 
-# Add legend manually
 fig.add_trace(go.Bar(
     x=[None], y=[None],
     marker=dict(color='blue'),
@@ -675,7 +648,6 @@ fig.add_trace(go.Bar(
     name='Negative'
 ))
 
-# Update layout for better readability
 fig.update_layout(
     title='<b>Top Features Correlating to t-SNE2</b>',
     xaxis_title='Features',
@@ -719,7 +691,7 @@ The main difference is the features that correlate with t-SNE2. Although for bot
 By conducting feature engineering and applying it to 2D and 3D t-SNE models, we see a pattern that "summer ratio" features have a high correlation with a t-SNE component that is able to differentiate the scenario with the highest temperature and the lowest temperature. What we can do with these insights will be discussed further in the future steps secion.
 
 ## Question : What was special about 2098?
-As we saw in the visualizations with t-SNE, we've noticed that 2098 of scenario 60 keeps acting like an outlier. *Why is this?* Is there a problem in the logic or are the datapoints actual outliers. 
+As we saw in the visualizations with t-SNE, we've noticed that 2098 of scenario 60 keeps acting like an outlier. **Why is this?** Is there a problem in the logic or are the datapoints actual outliers?
 
 The answer is that for some reason, the data points from the year 2098 are true outliers within the time series data of scenario 60. Not only is the temperature significantly higher than both its past and future values, but its features also almost resemble those from a different scenario. A line plot with a few key variables will help illustrate this better.
 
@@ -732,13 +704,11 @@ temp = temp[temp['scenario'].isin(['sc60'])]
 
 temp = temp.groupby(['year','scenario']).mean().reset_index()
 
-# Find the row corresponding to the year 2098
 row_2098 = temp[temp['year'] == 2098].iloc[0]
 
 def is_constant(column):
     return len(column.unique()) == 1
 
-# Find columns where the value for the year 2098 is the maximum or minimum in the column
 max_cols = [col for col in temp.columns if not is_constant(temp[col]) and temp[col].max() == row_2098[col]]
 min_cols = [col for col in temp.columns if not is_constant(temp[col]) and temp[col].min() == row_2098[col]]
 ```
@@ -747,7 +717,6 @@ min_cols = [col for col in temp.columns if not is_constant(temp[col]) and temp[c
 #| code-summary: Plot 2098 difference
 #| vscode: {languageId: python}
 
-# List of features to be plotted
 features = [
     "T_Annual",
     "DrySoilDays_Spring_top50",
@@ -755,27 +724,25 @@ features = [
     "SWA_Spring_whole"
 ]
 
-# Create subplot layout
 fig = make_subplots(rows=2, cols=2, 
                     subplot_titles=[f"<b>{feature}</b>" for feature in features],
                     horizontal_spacing=0.2,
                     vertical_spacing=0.2
                     )
 
-# Add bar charts for each feature to the subplots
 for i, feature in enumerate(features):
     fig.add_trace(
-        go.Line(
+        go.Scatter(
             x=temp['year'],
             y=temp[feature],
             text=[round(val, 2) for val in temp[feature]], 
             showlegend=False,
-            name=feature
+            name=feature,
+            mode='lines+markers'
         ),
         row=(i//2) + 1, col=(i%2) + 1
     )
 
-    # Update x and y axis titles for each subplot
     fig.update_xaxes(title_text='Year', row=(i//2) + 1, col=(i%2) + 1)
     fig.update_yaxes(title_text=feature, tickformat=".2f", row=(i//2) + 1, col=(i%2) + 1)
 
@@ -794,7 +761,7 @@ fig.update_layout(
 )
 
 for annotation in fig['layout']['annotations']:
-    annotation['font'] = dict(size=12)  # Subplot title font size
+    annotation['font'] = dict(size=12) 
 
 fig.show()
 ```

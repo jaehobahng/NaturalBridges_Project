@@ -1,7 +1,7 @@
 ---
 title: "Natural Bridges National Monument Preservation"
 title-block-banner: true
-abstract: "In order to preserve the environment, predictions of future temperature, percipitation, and other features were made based on historical samples from the Natural Bridges National Monument in Utah. In this research, correlations between variables are found through various visualizations and dimensionality reduction to suggest a direciton in which people can act to preserve the environment"
+abstract: "In order to preserve the environment, predictions of future temperature, percipitation, and other features were made based on historical samples from the Natural Bridges National Monument in Utah. In this research, correlations between various variables and temperature are found through visualizations and dimensionality reduction techniques to suggest a direciton in which people can act to preserve the environment"
 author: JaeHo Bahng
 date: 5/19/2024
 
